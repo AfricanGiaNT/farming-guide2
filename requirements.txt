@@ -1,0 +1,36 @@
+# Agricultural Advisor Bot - Python Dependencies
+# Week 1 MVP Requirements
+
+# Telegram Bot
+python-telegram-bot==20.7
+
+# HTTP Requests
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Date/Time Utilities
+python-dateutil==2.8.2
+
+# Week 3 AI Integration
+openai>=1.0.0  # For GPT-3.5-turbo integration
+
+# Optional but recommended
+urllib3==2.1.0
+certifi==2023.11.17
+
+# Week 4 PDF Knowledge Integration
+faiss-cpu>=1.7.0  # For PDF search and vector storage
+PyPDF2>=3.0.0  # For PDF processing and text extraction
+numpy>=1.24.0  # For numerical operations and embeddings
+pandas>=2.0.0  # For data analysis and processing
+tiktoken>=0.5.0  # For token counting and text chunking 
+
+# PostgreSQL Vector Database (Alternative to FAISS)
+psycopg2-binary>=2.9.0  # PostgreSQL adapter for Python
+sqlalchemy>=2.0.0  # ORM for database operations (optional)
+asyncpg>=0.29.0  # Async PostgreSQL driver (optional)
+
+# Note: pgvector extension must be installed separately on PostgreSQL server
+# See docs/postgresql_vector_database_guide.md for setup instructions 

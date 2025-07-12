@@ -1,0 +1,20 @@
+{
+  "documents": {},
+  "inverted_index": {},
+  "metadata": {},
+  "user_preferences": {
+    "user123": {
+      "preferred_authors": [
+        "Ministry of Agriculture",
+        "FAO"
+      ],
+      "preferred_topics": [
+        "maize",
+        "sustainability"
+      ],
+      "language": "en",
+      "experience_level": "intermediate"
+    }
+  },
+  "content_stats": {}
+}

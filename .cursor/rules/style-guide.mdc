@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- style-guide
+    
+    # Style Guide: Car Wash & Shop Rental Operations Tracker
+    
+    ## Coding Standards
+    
+    - **Language**: Python for scripts (PEP 8 compliance).
+    - **Naming**:
+        - Variables: `lower_case_with_underscores`.
+        - Functions: `camelCase` for JS, `snake_case` for Python.
+        - Files: `lowercase_with_underscores.py`.
+    - **Comments**: Include purpose and parameters (e.g., `# Generate weekly summary report`).
+    - **Modularity**: Break scripts into functions (e.g., `generate_summary()`, `send_notification()`).
+    
+    ## Documentation
+    
+    - Use Markdown for all .mdc files.
+    - Include examples in comments (e.g., sample API response).
+    - Update `instructions.md` with changes to structure or rules.
+    
+    ## Instructions for AI
+    
+    - Format code with 2-space indentation.
+    - Add docstrings to functions (e.g., `"""Generate weekly summary report."""`).
+    - Avoid magic numbers; use constants (e.g., `MIN_STOCK_LEVEL = 5`).
+    - Suggest improvements to style if deviations are detected.

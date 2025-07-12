@@ -1,0 +1,125 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- debugging-rules
+    
+    # General AWS Lambda & API Gateway Debugging Guide
+    
+    This guide provides a structured approach to debugging common issues in a serverless application (e.g., FastAPI, Flask) deployed on AWS Lambda with API Gateway. Following this workflow will help you and your AI assistant rapidly identify and resolve problems across different projects.
+    
+    ## 1. Systematic Debugging Flowchart
+    
+    When an endpoint is unresponsive, follow this decision tree to quickly narrow down the problem category.
+    
+    ```mermaid
+    graph TD
+        A[Start: Send Test Request] --> B{Did it Succeed?};
+        B -- YES --> C[✅ All Systems Operational];
+        B -- NO --> D{Check CloudWatch Logs};
+        D --> E{Are there ANY new logs?};
+        E -- NO --> F[Go to Problem Area 1: Invocation Failure];
+        E -- YES --> G{What does log say?};
+        G -- "ImportModuleError" --> H[Go to Problem Area 2: Dependency Issues];
+        G -- "404 Not Found" AND/OR "Short Duration (2-10ms)" --> I[Go to Problem Area 3: Application Routing Failure];
+        G -- "Other Python Error (e.g., KeyError, TypeError)" --> J[Standard Python Debugging in your handler/app code];
+    
+    ```
+    
+    ## 2. Detailed Problem Areas & Solutions
+    
+    ### Problem Area 1: Invocation Failure (No CloudWatch Logs)
+    
+    This is the most critical initial symptom. It means the client request is not successfully triggering your Lambda function.
+    
+    - **Symptoms:**
+        - The client (e.g., a Telegram bot, a web browser) gets a generic error or timeout.
+        - There are **absolutely no new log streams or entries** in CloudWatch for the Lambda function after the request.
+    - **Cause:** A misconfiguration in the connection between the client, API Gateway, and Lambda. The request is getting lost before it reaches your code.
+    - **Triage & Fix Checklist:**
+        1. **AI Action:** Ask the user to inspect the API Gateway configuration.
+        2. **User Action:**
+            - Navigate to the **API Gateway Console**.
+            - Select your HTTP API.
+            - Click on **"Routes"** in the left navigation pane.
+            - Identify the exact route integrated with your `{your-function-name}` Lambda (e.g., `ANY /{your-route}`).
+        3. **AI Action:** Based on the confirmed route, construct the full, correct endpoint URL. It will follow this pattern: `https://{api-id}.execute-api.{region}.amazonaws.com/{stage-name}/{your-route}`.
+        4. **AI Action:** Instruct the user to update their client or webhook configuration to use the correct URL. For example: `python setup_webhook.py set <full_correct_url>`.
+    
+    ---
+    
+    ### Problem Area 2: Dependency & Packaging Issues (`ImportModuleError`)
+    
+    This error means the Lambda runtime can't find a required library, often one with compiled C extensions.
+    
+    - **Symptoms:** CloudWatch logs show a clear `ImportModuleError: Unable to import module 'handler': No module named '{some-library}'` (e.g., `pydantic_core`, `numpy`).
+    - **Cause:** Dependencies were installed on a local machine (e.g., macOS, Windows) with a different architecture than the Linux-based Lambda runtime.
+    - **Triage & Fix Checklist:**
+        1. **AI Action:** Immediately confirm how the dependencies were packaged.
+        2. **User Action:** Verify that a script that uses **Docker** was run to build dependencies inside a Linux environment that matches Lambda. This is the only reliable method for compiled dependencies.
+        3. **AI Action:** Ensure the Lambda function's architecture setting (`x86_64` or `arm64`) matches the architecture used in the Docker build step.
+        4. **User Action:** In the Lambda console, double-check that the correct dependency layer (e.g., `{your-dependency-layer-name}`) and version are attached to the function.
+    
+    ---
+    
+    ### Problem Area 3: Application Routing Failure (`404 Not Found`)
+    
+    This is a subtle issue. The Lambda function runs, but the request immediately fails inside the application framework (FastAPI, Flask, etc.).
+    
+    - **Symptoms:**
+        - CloudWatch shows new logs, so the function *is* being invoked.
+        - Execution duration is extremely short (e.g., 2-10ms).
+        - Logs contain a `404 Not Found` error.
+    - **Cause:** API Gateway is passing the request path to the Lambda function with a stage prefix (e.g., `/default/{your-route}`), but the application framework only knows the route `/{your-route}`. The `Mangum` (or WSGI) adapter sees a path it doesn't recognize and returns a 404.
+    - **Triage & Fix Checklist (The Golden Rule: Log the Event)**
+        1. **AI Action:** The first and most important step is to **stop guessing** and get the ground truth. Modify the handler function to log the entire incoming `event` from API Gateway. This is non-negotiable for a fast diagnosis.
+            
+            ```python
+            # In your main handler file
+            import json
+            import logging
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+            
+            def lambda_handler(event, context):
+                logger.info(f"Received event: {json.dumps(event, indent=2)}")
+                # ... rest of handler
+            
+            ```
+            
+        2. **User Action:** Deploy the updated function and send one more test request.
+        3. **AI Action:** Analyze the `Received event` log in CloudWatch.
+            - Check `"version"`: This confirms the API Gateway payload format (e.g., `2.0` or `1.0`).
+            - Check `"rawPath"` (for v2.0) or `"path"` (for v1.0): This shows the full path sent by API Gateway.
+            - Check `event["requestContext"]["http"]["path"]` (for v2.0): This is often the *actual* path field the adapter uses.
+        4. **AI Action:** Implement the definitive fix in your handler function. Modify the correct path fields in the event object before it's passed to the application adapter.
+            
+            ```python
+            # In lambda_handler, before the try/except block
+            # Replace '{stage-name}' with your actual stage name (e.g., 'default')
+            stage_prefix = "/{stage-name}"
+            
+            # For payload v2.0
+            if "rawPath" in event and event["rawPath"].startswith(stage_prefix):
+                original_path = event["rawPath"]
+                new_path = original_path.replace(stage_prefix, "", 1)
+            
+                # Update both path fields to be safe
+                event["rawPath"] = new_path
+                if "requestContext" in event and "http" in event["requestContext"]:
+                    event["requestContext"]["http"]["path"] = new_path
+            
+                logger.info(f"Stripped path. Original: '{original_path}', New: '{new_path}'")
+            
+            # For payload v1.0 (less common with HTTP APIs, but good to have)
+            elif "path" in event and event["path"].startswith(stage_prefix):
+                 original_path = event["path"]
+                 new_path = original_path.replace(stage_prefix, "", 1)
+                 event["path"] = new_path
+                 logger.info(f"Stripped path. Original: '{original_path}', New: '{new_path}'")
+            
+            ```
+            
+    
+    This systematic approach, centered on logging the event payload, will prevent guesswork and lead directly to the root cause of routing issues.

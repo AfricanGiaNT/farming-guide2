@@ -1,0 +1,57 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 🔐 Authentication Handling: Agricultural Advisor Bot for Lilongwe, Malawi
+
+## ✅ Current Setup (Single-User Mode)
+
+- **User Scope**: Sole user (Trevor) as both developer and active bot user.
+- **Authentication Method**: Manual API key and environment variable management.
+
+### 🔑 Key Storage
+- All third-party keys must be stored securely in the `/config/` directory:
+  - `openai_key.env`
+  - `telegram_token.env`
+  - `google_keys.env` (for Search, Translate, and Vision APIs)
+
+### 🔐 Security Practices
+- Use `dotenv` or a similar package to load keys.
+- Never expose API keys in shared scripts or source control.
+- Use `.env` in development and environment variables in production (Render/AWS).
+
+---
+
+## 🤩 Future Multi-User Support (Optional, Post-MVP)
+
+| Role | Access Level |
+|------|--------------|
+| **Owner** | Full access to all data and AI integrations |
+| **Farmer (Standard User)** | Limited query history, language setting, query submission |
+| **Extension Officer** | Read-only access to knowledge base & response review logs |
+| **Admin** | Add/edit Q&A pairs, approve new PDF docs, monitor analytics |
+
+### 🔐 Proposed Auth Model
+- **OAuth 2.0** or **Telegram Account Link Verification** via deep links.
+- Alternatively: lightweight **JWT auth layer** with token-based roles stored in PostgreSQL.
+
+### 📾 Permissions Example
+| Table | Owner | Farmer | Officer | Admin |
+|-------|-------|--------|---------|-------|
+| `advice` | R/W | Read | Read | R/W |
+| `query_logs` | R/W | Read (own only) | R/W | R/W |
+| `pdf_chunks` | R/W | None | R | R/W |
+| `user_profile` | R/W | R/W | R/W | R/W |
+
+---
+
+## 🧠 Instructions for AI in Cursor
+
+- **Default to single-user mode** unless multi-user structure is explicitly enabled.
+- **Do not hardcode API keys**. Always use environment variables from `/config/`.
+- **Multi-user handling**:
+  - Recommend OAuth or Telegram login linking if user roles are introduced.
+  - Use `user_id` or `chat_id` for scoping records (e.g., in `query_logs`).
+- Log all access or actions to an `audit_log` table (optional) for future transparency.
+- Provide fallback authentication stubs or mocks during local development.

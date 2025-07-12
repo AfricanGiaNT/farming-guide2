@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+⸻
+
+📁 Folder Structure: Agricultural Advisor Bot for Lilongwe, Malawi
+
+🌿 Root Directory
+
+/scripts/                  # Core bot logic and modular components
+  ├─ /handlers/            # Telegram command and message handlers (e.g., start_handler.py)
+  ├─ /ai_agent/            # AI query logic (e.g., gpt_integration.py, prompt_formatter.py)
+  ├─ /data_pipeline/       # FAISS embedding, PDF parsing, Google Search (e.g., embed_pdfs.py)
+  ├─ /utils/               # Shared helper utilities (e.g., logger.py, language_tools.py)
+  
+/config/                   # Secrets and environment settings
+  ├─ openai_key.env
+  ├─ telegram_token.env
+  ├─ google_keys.env
+
+/rules/                    # Project-specific Cursor MDC rules and checklists
+
+/docs/                     # Documentation (e.g., instructions.md, architecture.md)
+
+
+
+⸻
+
+🧠 Knowledge Base & Database Structure
+	•	User Queries: query, response, timestamp, source, chat_id
+	•	Knowledge Base: topic, question, answer, source_type, tags
+	•	PDF Chunks (FAISS): chunk_id, text, embedding_vector, source_doc
+	•	Search Logs: query, search_type, hits, used_for_response
+	•	Language Preferences: user_id, preferred_language, auto_translate
+
+⸻
+
+🧪 Instructions for AI in Cursor
+	•	Use modular Python scripts for each responsibility (no monoliths).
+	•	Keep logic importable and reusable using utils/ and handlers/ conventions.
+	•	Never hardcode secrets — load from .env files in /config/.
+	•	Folder names must reflect function, not just the feature.
+	•	Response generators must include:
+	•	Bullet formatting,
+	•	Emoji support,
+	•	Chichewa fallback support (Phase 3 onward).
+	•	When adding new features (e.g., weather, vision):
+	•	Create a subfolder under /scripts/ (e.g., /scripts/weather/)
+	•	Include a README if it introduces new dependencies or services.
+
+⸻
+
+🛠️ Development Principles
+	•	Environment Variables: All third-party keys must be stored in /config/ as .env.
+	•	Testing: Scripts in /scripts/ should include testable functions.
+	•	Naming Conventions:
+	•	Files: snake_case.py
+	•	Functions: snake_case()
+	•	Constants: ALL_CAPS
+	•	Docs: Every new module or major function must be documented in /docs/.
+

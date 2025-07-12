@@ -1,0 +1,59 @@
+{
+  "document_access": {
+    "doc1.pdf": {
+      "access_count": 1,
+      "access_history": [
+        {
+          "timestamp": "2025-07-12T07:54:27.517158",
+          "user_id": "system",
+          "access_type": "batch_process",
+          "relevance_score": 0.8
+        }
+      ],
+      "relevance_scores": [
+        0.8
+      ],
+      "users": [
+        "system"
+      ]
+    },
+    "doc2.docx": {
+      "access_count": 1,
+      "access_history": [
+        {
+          "timestamp": "2025-07-12T07:54:27.517338",
+          "user_id": "system",
+          "access_type": "batch_process",
+          "relevance_score": 0.8
+        }
+      ],
+      "relevance_scores": [
+        0.8
+      ],
+      "users": [
+        "system"
+      ]
+    },
+    "doc3.txt": {
+      "access_count": 1,
+      "access_history": [
+        {
+          "timestamp": "2025-07-12T07:54:27.517493",
+          "user_id": "system",
+          "access_type": "batch_process",
+          "relevance_score": 0.8
+        }
+      ],
+      "relevance_scores": [
+        0.8
+      ],
+      "users": [
+        "system"
+      ]
+    }
+  },
+  "search_queries": [],
+  "user_feedback": [],
+  "performance_metrics": {},
+  "knowledge_gaps": []
+}

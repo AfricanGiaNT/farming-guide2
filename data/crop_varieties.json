@@ -1,0 +1,378 @@
+{
+  "lilongwe_crops": {
+    "maize": {
+      "name": "Maize (Corn)",
+      "scientific_name": "Zea mays",
+      "category": "cereal",
+      "varieties": [
+        {
+          "name": "SC403",
+          "type": "hybrid",
+          "maturity_days": 120,
+          "yield_potential": "high",
+          "drought_tolerance": "moderate",
+          "disease_resistance": ["maize_streak_virus", "grey_leaf_spot"]
+        },
+        {
+          "name": "SC419",
+          "type": "hybrid", 
+          "maturity_days": 125,
+          "yield_potential": "high",
+          "drought_tolerance": "good",
+          "disease_resistance": ["maize_streak_virus"]
+        },
+        {
+          "name": "Local White",
+          "type": "open_pollinated",
+          "maturity_days": 140,
+          "yield_potential": "moderate",
+          "drought_tolerance": "good",
+          "disease_resistance": ["moderate_resistance"]
+        },
+        {
+          "name": "SC304",
+          "type": "hybrid",
+          "maturity_days": 110,
+          "yield_potential": "high",
+          "drought_tolerance": "moderate",
+          "disease_resistance": ["maize_streak_virus"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 450,
+        "optimal_rainfall": 600,
+        "maximum_rainfall": 1200,
+        "critical_periods": ["flowering", "grain_filling"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 15,
+        "optimal_temp": 25,
+        "maximum_temp": 35
+      },
+      "planting_calendar": {
+        "early_season": {
+          "start": "November",
+          "end": "December", 
+          "rainfall_needed": 150
+        },
+        "late_season": {
+          "start": "January",
+          "end": "February",
+          "rainfall_needed": 100
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [5.5, 7.0],
+        "fertility": "medium_to_high",
+        "drainage": "well_drained"
+      }
+    },
+    "beans": {
+      "name": "Common Beans",
+      "scientific_name": "Phaseolus vulgaris",
+      "category": "legume",
+      "varieties": [
+        {
+          "name": "Navy Bean",
+          "type": "bush",
+          "maturity_days": 90,
+          "yield_potential": "moderate",
+          "drought_tolerance": "moderate",
+          "disease_resistance": ["bean_rust", "anthracnose"]
+        },
+        {
+          "name": "Pinto Bean",
+          "type": "bush",
+          "maturity_days": 85,
+          "yield_potential": "moderate",
+          "drought_tolerance": "good",
+          "disease_resistance": ["bean_rust"]
+        },
+        {
+          "name": "Climbing Bean",
+          "type": "climbing",
+          "maturity_days": 100,
+          "yield_potential": "high",
+          "drought_tolerance": "moderate",
+          "disease_resistance": ["bean_rust", "anthracnose"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 300,
+        "optimal_rainfall": 400,
+        "maximum_rainfall": 800,
+        "critical_periods": ["flowering", "pod_filling"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 18,
+        "optimal_temp": 22,
+        "maximum_temp": 30
+      },
+      "planting_calendar": {
+        "main_season": {
+          "start": "November",
+          "end": "January",
+          "rainfall_needed": 120
+        },
+        "dry_season": {
+          "start": "May",
+          "end": "July",
+          "rainfall_needed": 80,
+          "irrigation_required": true
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [6.0, 7.5],
+        "fertility": "medium",
+        "drainage": "well_drained"
+      }
+    },
+    "groundnuts": {
+      "name": "Groundnuts (Peanuts)",
+      "scientific_name": "Arachis hypogaea",
+      "category": "legume",
+      "varieties": [
+        {
+          "name": "Chalimbana",
+          "type": "valencia",
+          "maturity_days": 105,
+          "yield_potential": "high",
+          "drought_tolerance": "good",
+          "disease_resistance": ["groundnut_rosette"]
+        },
+        {
+          "name": "Msandile",
+          "type": "valencia",
+          "maturity_days": 110,
+          "yield_potential": "high",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["groundnut_rosette", "early_leaf_spot"]
+        },
+        {
+          "name": "Baka",
+          "type": "valencia",
+          "maturity_days": 95,
+          "yield_potential": "moderate",
+          "drought_tolerance": "good",
+          "disease_resistance": ["groundnut_rosette"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 400,
+        "optimal_rainfall": 500,
+        "maximum_rainfall": 1000,
+        "critical_periods": ["flowering", "pod_development"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 20,
+        "optimal_temp": 28,
+        "maximum_temp": 35
+      },
+      "planting_calendar": {
+        "main_season": {
+          "start": "November",
+          "end": "January",
+          "rainfall_needed": 150
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [5.5, 7.0],
+        "fertility": "medium",
+        "drainage": "well_drained"
+      }
+    },
+    "sorghum": {
+      "name": "Sorghum",
+      "scientific_name": "Sorghum bicolor",
+      "category": "cereal",
+      "varieties": [
+        {
+          "name": "Pirira 1",
+          "type": "grain",
+          "maturity_days": 120,
+          "yield_potential": "high",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["anthracnose", "leaf_blight"]
+        },
+        {
+          "name": "Pirira 2",
+          "type": "grain",
+          "maturity_days": 125,
+          "yield_potential": "high",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["anthracnose"]
+        },
+        {
+          "name": "Local Red",
+          "type": "grain",
+          "maturity_days": 140,
+          "yield_potential": "moderate",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["moderate_resistance"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 250,
+        "optimal_rainfall": 400,
+        "maximum_rainfall": 800,
+        "critical_periods": ["flowering", "grain_filling"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 20,
+        "optimal_temp": 30,
+        "maximum_temp": 40
+      },
+      "planting_calendar": {
+        "main_season": {
+          "start": "November",
+          "end": "January",
+          "rainfall_needed": 100
+        },
+        "late_season": {
+          "start": "February",
+          "end": "March",
+          "rainfall_needed": 80
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [5.5, 8.0],
+        "fertility": "low_to_medium",
+        "drainage": "well_drained"
+      }
+    },
+    "sweet_potato": {
+      "name": "Sweet Potato",
+      "scientific_name": "Ipomoea batatas",
+      "category": "root_tuber",
+      "varieties": [
+        {
+          "name": "Kaphulira",
+          "type": "orange_fleshed",
+          "maturity_days": 120,
+          "yield_potential": "high",
+          "drought_tolerance": "good",
+          "disease_resistance": ["sweet_potato_virus"]
+        },
+        {
+          "name": "Anaakwanire",
+          "type": "orange_fleshed",
+          "maturity_days": 110,
+          "yield_potential": "high",
+          "drought_tolerance": "good",
+          "disease_resistance": ["sweet_potato_virus"]
+        },
+        {
+          "name": "Chipika",
+          "type": "white_fleshed",
+          "maturity_days": 125,
+          "yield_potential": "moderate",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["moderate_resistance"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 300,
+        "optimal_rainfall": 450,
+        "maximum_rainfall": 900,
+        "critical_periods": ["establishment", "tuber_formation"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 18,
+        "optimal_temp": 26,
+        "maximum_temp": 35
+      },
+      "planting_calendar": {
+        "main_season": {
+          "start": "October",
+          "end": "December",
+          "rainfall_needed": 120
+        },
+        "dry_season": {
+          "start": "May",
+          "end": "July",
+          "rainfall_needed": 60,
+          "irrigation_required": true
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [5.5, 7.0],
+        "fertility": "medium",
+        "drainage": "well_drained"
+      }
+    },
+    "cassava": {
+      "name": "Cassava",
+      "scientific_name": "Manihot esculenta",
+      "category": "root_tuber",
+      "varieties": [
+        {
+          "name": "Manyokola",
+          "type": "sweet",
+          "maturity_days": 365,
+          "yield_potential": "high",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["cassava_mosaic_virus"]
+        },
+        {
+          "name": "Gomani",
+          "type": "sweet",
+          "maturity_days": 300,
+          "yield_potential": "high",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["cassava_mosaic_virus", "cassava_brown_streak"]
+        },
+        {
+          "name": "Mkondezi",
+          "type": "bitter",
+          "maturity_days": 400,
+          "yield_potential": "moderate",
+          "drought_tolerance": "excellent",
+          "disease_resistance": ["moderate_resistance"]
+        }
+      ],
+      "water_requirements": {
+        "minimum_rainfall": 200,
+        "optimal_rainfall": 350,
+        "maximum_rainfall": 800,
+        "critical_periods": ["establishment"]
+      },
+      "temperature_requirements": {
+        "minimum_temp": 20,
+        "optimal_temp": 28,
+        "maximum_temp": 35
+      },
+      "planting_calendar": {
+        "main_season": {
+          "start": "October",
+          "end": "December",
+          "rainfall_needed": 100
+        },
+        "dry_season": {
+          "start": "May",
+          "end": "July",
+          "rainfall_needed": 50,
+          "irrigation_required": false
+        }
+      },
+      "soil_requirements": {
+        "ph_range": [5.0, 7.5],
+        "fertility": "low_to_medium",
+        "drainage": "well_drained"
+      }
+    }
+  },
+  "seasonal_calendar": {
+    "rainy_season": {
+      "start_month": "November",
+      "end_month": "April",
+      "peak_months": ["December", "January", "February"],
+      "typical_rainfall": 800
+    },
+    "dry_season": {
+      "start_month": "May",
+      "end_month": "October",
+      "peak_months": ["July", "August", "September"],
+      "typical_rainfall": 50
+    }
+  }
+} 
