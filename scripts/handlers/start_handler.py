@@ -87,7 +87,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 🌱 **Crop Commands:**
 • `/crops [location]` - Crop recommendations based on conditions
-• `/varieties [crop_name]` - Specific variety recommendations
+• `/varieties [crop_name]` - Specific variety information and recommendations
 • `/planting [location]` - Optimal planting timing
 
 📍 **Location Formats:**
@@ -99,6 +99,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • `/weather Lilongwe` - Weather for Lilongwe
 • `/rain -13.98, 33.78` - Rainfall analysis for coordinates
 • `/crops Area 1` - Crop recommendations for Area 1
+• `/varieties groundnut` - Groundnut variety information
 
 **Other Commands:**
 • `/start` - Welcome message
@@ -109,6 +110,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • Use specific coordinates for best results
 • Check weather before planting decisions
 • Consider seasonal timing for crops
+• Ask for specific variety information to get detailed recommendations
 
 Need more help? Just ask a question about farming in Lilongwe! 🚜
 """

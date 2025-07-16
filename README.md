@@ -14,6 +14,13 @@ A smart, region-specific Telegram bot that provides agricultural advice for Lilo
 - Rainfall-optimized varieties
 - Seasonal planting advice
 
+🌿 **Variety Information**
+- Specific variety names and types
+- Planting times and seasons
+- Expected yields per hectare
+- Weather and soil requirements
+- Growing areas and districts
+
 📍 **Location Support**
 - Coordinate-based analysis
 - Named Lilongwe locations
@@ -82,6 +89,15 @@ python main.py
 /crops Lilongwe
 /crops -13.9833, 33.7833
 /crops Area 1
+```
+
+### Variety Information
+
+```
+/varieties groundnut
+/varieties maize
+/varieties common bean
+/varieties soybean
 ```
 
 ## Supported Locations

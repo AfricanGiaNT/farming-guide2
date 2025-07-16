@@ -14,6 +14,7 @@ from scripts.handlers.start_handler import start_command, help_command, about_co
 from scripts.handlers.weather_handler import weather_command, rain_command
 from scripts.handlers.crop_handler import crops_command
 from scripts.handlers.historical_rain_handler import historical_rain_handler
+from scripts.handlers.varieties_handler import varieties_command
 
 
 async def error_handler(update, context):
@@ -36,6 +37,7 @@ async def unknown_command(update, context):
         "• `/weather [location]` - Get weather info\n"
         "• `/rain [location]` - Analyze rainfall\n"
         "• `/crops [location]` - Get crop recommendations\n"
+        "• `/varieties [crop]` - Get variety information\n"
         "• `/rain_history [location] [years]` - Historical rainfall analysis\n"
         "• `/rain_compare [location] [rainfall] [years]` - Compare with historical data\n"
         "• `/drought_risk [location] [years]` - Assess drought risk\n"
@@ -58,10 +60,11 @@ async def text_message_handler(update, context):
         "• Weather information (`/weather [location]`)\n"
         "• Rainfall analysis (`/rain [location]`)\n"
         "• Crop recommendations (`/crops [location]`)\n"
+        "• Variety information (`/varieties [crop]`)\n"
         "• Historical rainfall analysis (`/rain_history [location] [years]`)\n"
         "• Rainfall comparison (`/rain_compare [location] [rainfall] [years]`)\n"
         "• Drought risk assessment (`/drought_risk [location] [years]`)\n\n"
-        "Try sending a command like `/weather Lilongwe` or use `/help` for more options!"
+        "Try sending a command like `/weather Lilongwe` or `/varieties groundnut` or use `/help` for more options!"
     )
 
 
@@ -99,6 +102,7 @@ def main():
     application.add_handler(CommandHandler("weather", weather_command))
     application.add_handler(CommandHandler("rain", rain_command))
     application.add_handler(CommandHandler("crops", crops_command))
+    application.add_handler(CommandHandler("varieties", varieties_command))
     
     # Register historical rainfall commands
     application.add_handler(CommandHandler("rain_history", historical_rain_handler.handle_rain_history))
