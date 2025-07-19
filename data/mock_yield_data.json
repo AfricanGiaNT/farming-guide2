@@ -1,0 +1,878 @@
+{
+  "maize": [
+    {
+      "year": 2022,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.56,
+      "weather_data": {
+        "avg_temperature": 21.54141194007774,
+        "total_rainfall": 903.027753369469,
+        "rainy_days": 85,
+        "humidity": 83.79514822070949
+      },
+      "planting_date": "2022-11-01",
+      "harvest_date": "2022-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 0.94,
+      "weather_data": {
+        "avg_temperature": 29.83974728692645,
+        "total_rainfall": 257.64496603305656,
+        "rainy_days": 22,
+        "humidity": 34.27267725011581
+      },
+      "planting_date": "2022-04-01",
+      "harvest_date": "2022-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.5,
+      "weather_data": {
+        "avg_temperature": 21.299509866679102,
+        "total_rainfall": 780.1349393783738,
+        "rainy_days": 75,
+        "humidity": 80.99428860400747
+      },
+      "planting_date": "2023-11-01",
+      "harvest_date": "2023-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.6,
+      "weather_data": {
+        "avg_temperature": 33.79902523765581,
+        "total_rainfall": 305.5057809014979,
+        "rainy_days": 10,
+        "humidity": 43.749577645212135
+      },
+      "planting_date": "2023-04-01",
+      "harvest_date": "2023-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.65,
+      "weather_data": {
+        "avg_temperature": 23.39295786092318,
+        "total_rainfall": 746.9742289327654,
+        "rainy_days": 68,
+        "humidity": 66.03185012942245
+      },
+      "planting_date": "2024-11-01",
+      "harvest_date": "2024-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.94,
+      "weather_data": {
+        "avg_temperature": 27.124224827101806,
+        "total_rainfall": 204.9374840825961,
+        "rainy_days": 16,
+        "humidity": 46.38310429052958
+      },
+      "planting_date": "2024-04-01",
+      "harvest_date": "2024-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.27,
+      "weather_data": {
+        "avg_temperature": 26.98852399420349,
+        "total_rainfall": 722.5769768642356,
+        "rainy_days": 84,
+        "humidity": 78.64410769089187
+      },
+      "planting_date": "2020-11-01",
+      "harvest_date": "2020-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 0.47,
+      "weather_data": {
+        "avg_temperature": 26.113132523101516,
+        "total_rainfall": 345.5159228009128,
+        "rainy_days": 20,
+        "humidity": 65.94243649884311
+      },
+      "planting_date": "2020-04-01",
+      "harvest_date": "2020-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.69,
+      "weather_data": {
+        "avg_temperature": 24.272153094618336,
+        "total_rainfall": 761.1581295724208,
+        "rainy_days": 89,
+        "humidity": 90.33378701471639
+      },
+      "planting_date": "2021-11-01",
+      "harvest_date": "2021-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.58,
+      "weather_data": {
+        "avg_temperature": 25.058699869650876,
+        "total_rainfall": 239.36835564006967,
+        "rainy_days": 13,
+        "humidity": 53.99390221445362
+      },
+      "planting_date": "2021-04-01",
+      "harvest_date": "2021-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.52,
+      "weather_data": {
+        "avg_temperature": 32.09913775866147,
+        "total_rainfall": 903.5382928252712,
+        "rainy_days": 74,
+        "humidity": 84.66622145556418
+      },
+      "planting_date": "2022-11-01",
+      "harvest_date": "2022-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.52,
+      "weather_data": {
+        "avg_temperature": 32.28500438218257,
+        "total_rainfall": 257.4950673087992,
+        "rainy_days": 12,
+        "humidity": 54.9617952881882
+      },
+      "planting_date": "2022-04-01",
+      "harvest_date": "2022-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.73,
+      "weather_data": {
+        "avg_temperature": 26.460625482453437,
+        "total_rainfall": 875.9572063041242,
+        "rainy_days": 62,
+        "humidity": 69.5036443650268
+      },
+      "planting_date": "2023-11-01",
+      "harvest_date": "2023-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.56,
+      "weather_data": {
+        "avg_temperature": 31.544955323216957,
+        "total_rainfall": 253.83019741567298,
+        "rainy_days": 13,
+        "humidity": 53.29770698173711
+      },
+      "planting_date": "2023-04-01",
+      "harvest_date": "2023-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.68,
+      "weather_data": {
+        "avg_temperature": 21.10370915997787,
+        "total_rainfall": 1216.7473179429944,
+        "rainy_days": 85,
+        "humidity": 58.43380299049757
+      },
+      "planting_date": "2024-11-01",
+      "harvest_date": "2024-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.75,
+      "weather_data": {
+        "avg_temperature": 25.949189313657843,
+        "total_rainfall": 231.92646774290588,
+        "rainy_days": 25,
+        "humidity": 57.651514423148235
+      },
+      "planting_date": "2024-04-01",
+      "harvest_date": "2024-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.68,
+      "weather_data": {
+        "avg_temperature": 32.654887351579724,
+        "total_rainfall": 820.7175796809732,
+        "rainy_days": 87,
+        "humidity": 75.07440560413573
+      },
+      "planting_date": "2020-11-01",
+      "harvest_date": "2020-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 0.75,
+      "weather_data": {
+        "avg_temperature": 30.18755169748897,
+        "total_rainfall": 324.488755874356,
+        "rainy_days": 29,
+        "humidity": 57.07046454002449
+      },
+      "planting_date": "2020-04-01",
+      "harvest_date": "2020-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.94,
+      "weather_data": {
+        "avg_temperature": 26.96649933870308,
+        "total_rainfall": 800.5810204759463,
+        "rainy_days": 76,
+        "humidity": 69.56634760022654
+      },
+      "planting_date": "2021-11-01",
+      "harvest_date": "2021-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.71,
+      "weather_data": {
+        "avg_temperature": 19.368065404790592,
+        "total_rainfall": 224.49724068368596,
+        "rainy_days": 17,
+        "humidity": 48.863964667882016
+      },
+      "planting_date": "2021-04-01",
+      "harvest_date": "2021-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.73,
+      "weather_data": {
+        "avg_temperature": 24.563305368549955,
+        "total_rainfall": 659.57410320883,
+        "rainy_days": 67,
+        "humidity": 74.55514943365189
+      },
+      "planting_date": "2022-11-01",
+      "harvest_date": "2022-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.01,
+      "weather_data": {
+        "avg_temperature": 30.49516050770323,
+        "total_rainfall": 242.02524325049825,
+        "rainy_days": 11,
+        "humidity": 76.14481297184201
+      },
+      "planting_date": "2022-04-01",
+      "harvest_date": "2022-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.1,
+      "weather_data": {
+        "avg_temperature": 29.020893820514438,
+        "total_rainfall": 937.407128417644,
+        "rainy_days": 84,
+        "humidity": 87.57511025784791
+      },
+      "planting_date": "2023-11-01",
+      "harvest_date": "2023-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.45,
+      "weather_data": {
+        "avg_temperature": 33.552888164219794,
+        "total_rainfall": 194.17253172731736,
+        "rainy_days": 20,
+        "humidity": 33.66490780607297
+      },
+      "planting_date": "2023-04-01",
+      "harvest_date": "2023-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.48,
+      "weather_data": {
+        "avg_temperature": 23.32796984260949,
+        "total_rainfall": 988.5530839739016,
+        "rainy_days": 68,
+        "humidity": 88.14263865347912
+      },
+      "planting_date": "2024-11-01",
+      "harvest_date": "2024-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.52,
+      "weather_data": {
+        "avg_temperature": 26.467745032281112,
+        "total_rainfall": 171.0505367585004,
+        "rainy_days": 29,
+        "humidity": 27.73367439667119
+      },
+      "planting_date": "2024-04-01",
+      "harvest_date": "2024-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.59,
+      "weather_data": {
+        "avg_temperature": 20.97087517478304,
+        "total_rainfall": 656.7203861947668,
+        "rainy_days": 60,
+        "humidity": 79.68595577009216
+      },
+      "planting_date": "2020-11-01",
+      "harvest_date": "2020-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.01,
+      "weather_data": {
+        "avg_temperature": 23.543681620022326,
+        "total_rainfall": 149.3710389046373,
+        "rainy_days": 16,
+        "humidity": 61.59419670734011
+      },
+      "planting_date": "2020-04-01",
+      "harvest_date": "2020-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 4.79,
+      "weather_data": {
+        "avg_temperature": 21.091848568213788,
+        "total_rainfall": 817.1951721744852,
+        "rainy_days": 74,
+        "humidity": 79.27667949420861
+      },
+      "planting_date": "2021-11-01",
+      "harvest_date": "2021-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.57,
+      "weather_data": {
+        "avg_temperature": 30.307025504846926,
+        "total_rainfall": 347.9227625715936,
+        "rainy_days": 20,
+        "humidity": 48.64100382213483
+      },
+      "planting_date": "2021-04-01",
+      "harvest_date": "2021-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.66,
+      "weather_data": {
+        "avg_temperature": 22.83907395582665,
+        "total_rainfall": 938.6430544006051,
+        "rainy_days": 68,
+        "humidity": 93.03123127464656
+      },
+      "planting_date": "2022-11-01",
+      "harvest_date": "2022-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.92,
+      "weather_data": {
+        "avg_temperature": 25.978890734918124,
+        "total_rainfall": 266.00126094361326,
+        "rainy_days": 11,
+        "humidity": 34.36517769535938
+      },
+      "planting_date": "2022-04-01",
+      "harvest_date": "2022-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.05,
+      "weather_data": {
+        "avg_temperature": 23.391875436083737,
+        "total_rainfall": 908.4313385278726,
+        "rainy_days": 67,
+        "humidity": 71.5686170157894
+      },
+      "planting_date": "2023-11-01",
+      "harvest_date": "2023-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.01,
+      "weather_data": {
+        "avg_temperature": 28.22798414210516,
+        "total_rainfall": 219.11530646548758,
+        "rainy_days": 28,
+        "humidity": 51.38448281960027
+      },
+      "planting_date": "2023-04-01",
+      "harvest_date": "2023-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.5,
+      "weather_data": {
+        "avg_temperature": 26.949215310259195,
+        "total_rainfall": 985.3311067710187,
+        "rainy_days": 71,
+        "humidity": 80.23330791333125
+      },
+      "planting_date": "2024-11-01",
+      "harvest_date": "2024-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.68,
+      "weather_data": {
+        "avg_temperature": 30.150432346299098,
+        "total_rainfall": 104.47447279030564,
+        "rainy_days": 23,
+        "humidity": 48.16319735527485
+      },
+      "planting_date": "2024-04-01",
+      "harvest_date": "2024-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.48,
+      "weather_data": {
+        "avg_temperature": 23.351083326587315,
+        "total_rainfall": 712.8786698517064,
+        "rainy_days": 66,
+        "humidity": 60.39032362110844
+      },
+      "planting_date": "2020-11-01",
+      "harvest_date": "2020-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2020,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 4.38,
+      "weather_data": {
+        "avg_temperature": 31.346615889041065,
+        "total_rainfall": 98.84063490741292,
+        "rainy_days": 18,
+        "humidity": 38.85109184160301
+      },
+      "planting_date": "2020-04-01",
+      "harvest_date": "2020-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.68,
+      "weather_data": {
+        "avg_temperature": 27.801499626921522,
+        "total_rainfall": 749.9545515905234,
+        "rainy_days": 83,
+        "humidity": 70.68552091064777
+      },
+      "planting_date": "2021-11-01",
+      "harvest_date": "2021-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2021,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.2,
+      "weather_data": {
+        "avg_temperature": 26.056265416495837,
+        "total_rainfall": 258.2517694586207,
+        "rainy_days": 12,
+        "humidity": 63.5033299814097
+      },
+      "planting_date": "2021-04-01",
+      "harvest_date": "2021-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.21,
+      "weather_data": {
+        "avg_temperature": 22.488834491754737,
+        "total_rainfall": 823.4452083331233,
+        "rainy_days": 78,
+        "humidity": 65.69326216244754
+      },
+      "planting_date": "2022-11-01",
+      "harvest_date": "2022-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2022,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 1.69,
+      "weather_data": {
+        "avg_temperature": 28.625796964635654,
+        "total_rainfall": 136.45688310407942,
+        "rainy_days": 16,
+        "humidity": 35.548286690034274
+      },
+      "planting_date": "2022-04-01",
+      "harvest_date": "2022-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.61,
+      "weather_data": {
+        "avg_temperature": 19.70357854354313,
+        "total_rainfall": 930.6537735906612,
+        "rainy_days": 89,
+        "humidity": 79.79168689232935
+      },
+      "planting_date": "2023-11-01",
+      "harvest_date": "2023-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2023,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.47,
+      "weather_data": {
+        "avg_temperature": 34.608718572388604,
+        "total_rainfall": 223.21563191318174,
+        "rainy_days": 10,
+        "humidity": 41.0800572848783
+      },
+      "planting_date": "2023-04-01",
+      "harvest_date": "2023-08-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "rainy",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 2.98,
+      "weather_data": {
+        "avg_temperature": 26.30266728898307,
+        "total_rainfall": 567.3973757750406,
+        "rainy_days": 60,
+        "humidity": 69.21881263196684
+      },
+      "planting_date": "2024-11-01",
+      "harvest_date": "2024-04-01",
+      "data_type": "mock"
+    },
+    {
+      "year": 2024,
+      "season": "dry",
+      "crop_id": "maize",
+      "location": {
+        "lat": -13.9626,
+        "lon": 33.7741
+      },
+      "yield_tons_ha": 3.16,
+      "weather_data": {
+        "avg_temperature": 29.961453725316247,
+        "total_rainfall": 247.25090919988276,
+        "rainy_days": 20,
+        "humidity": 18.305167562945698
+      },
+      "planting_date": "2024-04-01",
+      "harvest_date": "2024-08-01",
+      "data_type": "mock"
+    }
+  ]
+}

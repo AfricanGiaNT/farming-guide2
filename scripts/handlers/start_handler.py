@@ -86,7 +86,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • `/forecast [location]` - 7-day weather forecast
 
 🌱 **Crop Commands:**
-• `/crops [location]` - Crop recommendations based on conditions
+• `/crops [location]` - Current season crop recommendations
+• `/crops [location] rainy` - Rainy season recommendations (Nov-Apr)
+• `/crops [location] dry` - Dry season recommendations (May-Oct)
+• `/crops [location] all` - Compare all seasons
 • `/varieties [crop_name]` - Specific variety information and recommendations
 • `/planting [location]` - Optimal planting timing
 
@@ -98,8 +101,17 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 **Examples:**
 • `/weather Lilongwe` - Weather for Lilongwe
 • `/rain -13.98, 33.78` - Rainfall analysis for coordinates
-• `/crops Area 1` - Crop recommendations for Area 1
+• `/crops Area 1` - Current season recommendations
+• `/crops Lilongwe rainy` - Rainy season recommendations
+• `/crops -13.98, 33.78 dry` - Dry season recommendations
+• `/crops Area 1 all` - Compare all seasons
 • `/varieties groundnut` - Groundnut variety information
+
+**Seasonal Options:**
+• `current` (default) - Current season recommendations
+• `rainy` or `rain` - Rainy season (Nov-Apr) recommendations
+• `dry` - Dry season (May-Oct) recommendations
+• `all` - Compare all seasons side-by-side
 
 **Other Commands:**
 • `/start` - Welcome message
@@ -110,6 +122,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • Use specific coordinates for best results
 • Check weather before planting decisions
 • Consider seasonal timing for crops
+• Try different seasons to plan year-round farming
 • Ask for specific variety information to get detailed recommendations
 
 Need more help? Just ask a question about farming in Lilongwe! 🚜

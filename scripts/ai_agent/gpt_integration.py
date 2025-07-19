@@ -52,7 +52,8 @@ class GPTIntegration:
                                          recommendations: Dict[str, Any],
                                          weather_data: Dict[str, Any],
                                          location: str,
-                                         user_id: str) -> Dict[str, Any]:
+                                         user_id: str,
+                                         season_filter: str = 'current') -> Dict[str, Any]:
         """
         Enhance crop recommendations with AI-generated insights and PDF knowledge.
         
@@ -61,33 +62,34 @@ class GPTIntegration:
             weather_data: Current weather data
             location: Location string
             user_id: User ID for logging
+            season_filter: Season filter used (current, rainy, dry, all)
             
         Returns:
             Enhanced recommendations with AI insights and PDF knowledge
         """
-        logger.info(f"Enhancing crop recommendations with AI and PDF knowledge for user {user_id}")
+        logger.info(f"Enhancing crop recommendations with AI and PDF knowledge for user {user_id} (season: {season_filter})")
         
         try:
-            # Generate cache key
-            cache_key = self._generate_cache_key(recommendations, weather_data, location)
+            # Generate cache key including season filter
+            cache_key = self._generate_cache_key(recommendations, weather_data, location, season_filter)
             
             # Check cache first (cost optimization)
             if cache_key in self.response_cache:
-                logger.info(f"Using cached AI response for user {user_id}")
+                logger.info(f"Using cached AI response for user {user_id} (season: {season_filter})")
                 return self.response_cache[cache_key]
             
             # Search PDF knowledge for relevant information
-            pdf_context = await self._get_pdf_context(recommendations, location, user_id)
+            pdf_context = await self._get_pdf_context(recommendations, location, user_id, season_filter)
             
-            # Prepare prompt for GPT-3.5-turbo with PDF context
-            prompt = self._create_enhanced_prompt(recommendations, weather_data, location, pdf_context)
+            # Prepare prompt for GPT-3.5-turbo with PDF context and season filter
+            prompt = self._create_enhanced_prompt(recommendations, weather_data, location, pdf_context, season_filter)
             
             # Get AI response
             ai_response = await self._get_ai_response(prompt, user_id)
             
             # Parse and integrate AI insights
             enhanced_recommendations = self._integrate_ai_insights(
-                recommendations, ai_response, user_id
+                recommendations, ai_response, user_id, season_filter
             )
             
             # Add PDF knowledge metadata
@@ -100,6 +102,9 @@ class GPTIntegration:
             else:
                 enhanced_recommendations['pdf_knowledge_used'] = False
             
+            # Add seasonal context
+            enhanced_recommendations['season_filter'] = season_filter
+            
             # Cache the response
             self.response_cache[cache_key] = enhanced_recommendations
             
@@ -110,7 +115,7 @@ class GPTIntegration:
             # Return original recommendations as fallback
             return recommendations
     
-    async def _get_pdf_context(self, recommendations: Dict[str, Any], location: str, user_id: str) -> List[Dict[str, Any]]:
+    async def _get_pdf_context(self, recommendations: Dict[str, Any], location: str, user_id: str, season_filter: str) -> List[Dict[str, Any]]:
         """
         Get relevant PDF context for crop recommendations.
         
@@ -118,6 +123,7 @@ class GPTIntegration:
             recommendations: Crop recommendations
             location: Location string
             user_id: User ID for logging
+            season_filter: Season filter used (current, rainy, dry, all)
             
         Returns:
             List of relevant PDF chunks
@@ -176,24 +182,69 @@ class GPTIntegration:
                               recommendations: Dict[str, Any],
                               weather_data: Dict[str, Any],
                               location: str,
-                              pdf_context: List[Dict[str, Any]]) -> str:
-        """Create enhanced prompt with PDF knowledge context."""
+                              pdf_context: List[Dict[str, Any]],
+                              season_filter: str) -> str:
+        """Create enhanced prompt with PDF knowledge context and seasonal focus."""
         
         # Extract key data points
         top_crops = recommendations.get('recommendations', [])[:3]
         env_summary = recommendations.get('environmental_summary', {})
         
-        # Start with basic prompt
-        prompt = f"""As an agricultural advisor for {location}, enhance these crop recommendations with practical insights:
+        # Determine seasonal context
+        season_context_map = {
+            'current': 'current conditions',
+            'rainy': 'rainy season (Nov-Apr) with typical 800mm rainfall',
+            'rain': 'rainy season (Nov-Apr) with typical 800mm rainfall',
+            'wet': 'rainy season (Nov-Apr) with typical 800mm rainfall',
+            'dry': 'dry season (May-Oct) with minimal rainfall (50mm)',
+            'all': 'year-round farming strategy across all seasons'
+        }
+        season_context = season_context_map.get(season_filter, 'current conditions')
+        
+        # Start with seasonal prompt
+        prompt = f"""As an agricultural advisor for {location}, enhance these crop recommendations for {season_context}:
 
-CURRENT CONDITIONS:
+"""
+        
+        # Add seasonal-specific context
+        if season_filter in ['rainy', 'rain', 'wet']:
+            prompt += """SEASONAL CONTEXT (Rainy Season):
+- Typical rainfall: 800mm (Nov-Apr)
+- Optimal growing conditions
+- Main agricultural season
+- Multiple cropping opportunities
+- Focus on main season crops
+
+"""
+        elif season_filter == 'dry':
+            prompt += """SEASONAL CONTEXT (Dry Season):
+- Minimal rainfall: 50mm (May-Oct)
+- Focus on drought-tolerant crops
+- Irrigation opportunities
+- Land preparation season
+- Harvest and storage focus
+
+"""
+        elif season_filter == 'all':
+            prompt += """SEASONAL CONTEXT (Year-Round Strategy):
+- Comparing all seasons
+- Year-round farming strategies
+- Seasonal transition planning
+- Crop rotation considerations
+- Risk diversification
+
+"""
+        
+        # Add current conditions (only for current season or if available)
+        if season_filter == 'current' or env_summary:
+            prompt += f"""CURRENT CONDITIONS:
 - Rainfall: {env_summary.get('total_7day_rainfall', 0)}mm (7 days)
 - Temperature: {env_summary.get('current_temperature', 25)}°C
 - Season: {env_summary.get('current_season', 'unknown')}
 
-TOP CROPS:
 """
         
+        prompt += "TOP CROPS:\n"
         for i, crop in enumerate(top_crops, 1):
             crop_name = crop.get('crop_data', {}).get('name', 'Unknown')
             score = crop.get('total_score', 0)
@@ -207,7 +258,33 @@ TOP CROPS:
                 source = context.get('source_document', 'Agricultural Guide')
                 prompt += f"{i}. From {source}: {text_preview}...\n"
         
-        prompt += """
+        # Add season-specific guidance request
+        if season_filter in ['rainy', 'rain', 'wet']:
+            prompt += """
+Based on rainy season conditions and available knowledge, provide:
+1. Rainy season risk assessment (flooding, disease, timing)
+2. Planting timing for optimal rainfall utilization
+3. Specific farming tips for rainy season conditions
+
+Keep response under 200 words, focus on rainy season opportunities."""
+        elif season_filter == 'dry':
+            prompt += """
+Based on dry season conditions and available knowledge, provide:
+1. Dry season risk assessment (drought, water scarcity, storage)
+2. Water management and irrigation strategies
+3. Specific farming tips for dry season conditions
+
+Keep response under 200 words, focus on drought management."""
+        elif season_filter == 'all':
+            prompt += """
+Based on year-round farming strategy and available knowledge, provide:
+1. Seasonal risk assessment and mitigation
+2. Crop rotation and timing recommendations
+3. Year-round farming strategy tips
+
+Keep response under 200 words, focus on long-term planning."""
+        else:
+            prompt += """
 Based on current conditions and available knowledge, provide:
 1. Risk assessment (drought, pest, market)
 2. Timing recommendations (when to plant/harvest)
@@ -316,7 +393,8 @@ Format as bullet points, max 20 words each."""
     def _integrate_ai_insights(self, 
                              recommendations: Dict[str, Any],
                              ai_response: str,
-                             user_id: str) -> Dict[str, Any]:
+                             user_id: str,
+                             season_filter: str) -> Dict[str, Any]:
         """
         Integrate AI insights into the recommendations structure.
         
@@ -324,6 +402,7 @@ Format as bullet points, max 20 words each."""
             recommendations: Original recommendations
             ai_response: AI-generated insights
             user_id: User ID for logging
+            season_filter: Season filter used (current, rainy, dry, all)
             
         Returns:
             Enhanced recommendations with AI insights
@@ -344,7 +423,7 @@ Format as bullet points, max 20 words each."""
         if 'timing' in ai_response.lower():
             enhanced['timing_advice'] = self._extract_timing_info(ai_response)
         
-        logger.info(f"AI insights integrated for user {user_id}")
+        logger.info(f"AI insights integrated for user {user_id} (season: {season_filter})")
         return enhanced
     
     def _extract_risk_info(self, ai_response: str) -> Dict[str, Any]:
@@ -393,14 +472,16 @@ Format as bullet points, max 20 words each."""
     def _generate_cache_key(self, 
                           recommendations: Dict[str, Any],
                           weather_data: Dict[str, Any],
-                          location: str) -> str:
+                          location: str,
+                          season_filter: str) -> str:
         """Generate cache key for response caching."""
         # Create hash based on key parameters
         key_data = {
             'location': location,
             'temperature': weather_data.get('temperature', 25),
             'rainfall': recommendations.get('environmental_summary', {}).get('total_7day_rainfall', 0),
-            'top_crop': recommendations.get('recommendations', [{}])[0].get('crop_data', {}).get('name', 'none')
+            'top_crop': recommendations.get('recommendations', [{}])[0].get('crop_data', {}).get('name', 'none'),
+            'season_filter': season_filter
         }
         
         return str(hash(json.dumps(key_data, sort_keys=True)))

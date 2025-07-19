@@ -12,7 +12,7 @@ from scripts.utils.logger import logger
 # Import handlers
 from scripts.handlers.start_handler import start_command, help_command, about_command
 from scripts.handlers.weather_handler import weather_command, rain_command
-from scripts.handlers.crop_handler import crops_command
+from scripts.handlers.crop_handler import crops_command, seasonal_callback, weather_callback, rainfall_callback, alternatives_callback
 from scripts.handlers.historical_rain_handler import historical_rain_handler
 from scripts.handlers.varieties_handler import varieties_command
 
@@ -104,6 +104,53 @@ def main():
     application.add_handler(CommandHandler("crops", crops_command))
     application.add_handler(CommandHandler("varieties", varieties_command))
     
+    # Register callback query handlers
+    from telegram.ext import CallbackQueryHandler
+    
+    # Add comprehensive callback handler for debugging
+    async def comprehensive_callback(update, context):
+        """Handle any callback queries with comprehensive logging."""
+        query = update.callback_query
+        user_id = str(query.from_user.id)
+        callback_data = query.data
+        
+        # Log everything about the callback
+        print(f"🔔 CALLBACK RECEIVED: {callback_data} from user {user_id}")
+        logger.info(f"🔔 CALLBACK RECEIVED: {callback_data} from user {user_id}")
+        
+        # Log the full update object for debugging
+        logger.info(f"Full update object: {update}")
+        logger.info(f"Callback query object: {query}")
+        
+        try:
+            # Try to handle specific callbacks
+            if callback_data.startswith('s:'):
+                logger.info("Routing to seasonal_callback")
+                await seasonal_callback(update, context)
+            elif callback_data.startswith('w:'):
+                logger.info("Routing to weather_callback")
+                await weather_callback(update, context)
+            elif callback_data.startswith('r:'):
+                logger.info("Routing to rainfall_callback")
+                await rainfall_callback(update, context)
+            elif callback_data.startswith('alt:'):
+                logger.info("Routing to alternatives_callback")
+                await alternatives_callback(update, context)
+            elif callback_data == 'help':
+                logger.info("Handling help callback")
+                await query.answer("Help information")
+                await query.edit_message_text("❓ **Help**\n\nUse the buttons to navigate between different seasons and get weather information.")
+            else:
+                logger.info(f"Unhandled callback: {callback_data}")
+                await query.answer(f"Unhandled callback: {callback_data}")
+                
+        except Exception as e:
+            logger.error(f"Error in callback handler: {e}")
+            await query.answer(f"Error: {str(e)}")
+    
+    # Register the comprehensive callback handler
+    application.add_handler(CallbackQueryHandler(comprehensive_callback))
+    
     # Register historical rainfall commands
     application.add_handler(CommandHandler("rain_history", historical_rain_handler.handle_rain_history))
     application.add_handler(CommandHandler("rain_compare", historical_rain_handler.handle_rain_compare))
@@ -121,7 +168,12 @@ def main():
     # Start the bot
     try:
         logger.info("Bot starting up...")
-        application.run_polling(poll_interval=1.0)
+        # Configure polling with proper allowed updates
+        application.run_polling(
+            poll_interval=1.0,
+            allowed_updates=['message', 'callback_query', 'edited_message'],
+            drop_pending_updates=True
+        )
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:

@@ -96,6 +96,234 @@ class CropRecommendationEngine:
             'analysis_timestamp': datetime.datetime.now().isoformat()
         }
     
+    def generate_rainy_season_recommendations(self, 
+                                            rainfall_data: Dict[str, Any], 
+                                            weather_data: Dict[str, Any],
+                                            lat: float, 
+                                            lon: float) -> Dict[str, Any]:
+        """
+        Generate crop recommendations optimized for rainy season conditions.
+        
+        Args:
+            rainfall_data: Rainfall analysis data
+            weather_data: Current weather data
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Rainy season recommendation results
+        """
+        logger.info(f"Generating rainy season recommendations for coordinates: {lat}, {lon}")
+        
+        # Use rainy season parameters
+        rainy_season_rainfall = 800  # Typical rainy season rainfall
+        rainy_season_temp = 25  # Typical rainy season temperature
+        rainy_season_humidity = 70  # Typical rainy season humidity
+        
+        # Generate recommendations for each crop
+        crop_scores = []
+        all_crops = self.crop_db.get_all_crops()
+        
+        for crop_id, crop_data in all_crops.items():
+            score_data = self._calculate_rainy_season_score(
+                crop_id, crop_data, rainy_season_rainfall, rainy_season_temp, 
+                rainy_season_humidity
+            )
+            crop_scores.append(score_data)
+        
+        # Sort by total score
+        crop_scores.sort(key=lambda x: x['total_score'], reverse=True)
+        
+        # Generate variety recommendations for top crops
+        top_crops_with_varieties = self._add_variety_recommendations(
+            crop_scores[:5], rainy_season_rainfall, rainy_season_temp
+        )
+        
+        return {
+            'recommendations': top_crops_with_varieties,
+            'environmental_summary': {
+                'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
+                'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
+                'estimated_seasonal_rainfall': rainy_season_rainfall,
+                'current_temperature': weather_data.get('temperature', rainy_season_temp),
+                'humidity': weather_data.get('humidity', rainy_season_humidity),
+                'current_season': 'rainy_season',
+                'current_month': self.current_month
+            },
+            'analysis_timestamp': datetime.datetime.now().isoformat()
+        }
+    
+    def generate_dry_season_recommendations(self, 
+                                          rainfall_data: Dict[str, Any], 
+                                          weather_data: Dict[str, Any],
+                                          lat: float, 
+                                          lon: float) -> Dict[str, Any]:
+        """
+        Generate crop recommendations optimized for dry season conditions.
+        
+        Args:
+            rainfall_data: Rainfall analysis data
+            weather_data: Current weather data
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Dry season recommendation results
+        """
+        logger.info(f"Generating dry season recommendations for coordinates: {lat}, {lon}")
+        
+        # Use dry season parameters
+        dry_season_rainfall = 50  # Typical dry season rainfall
+        dry_season_temp = 22  # Typical dry season temperature
+        dry_season_humidity = 40  # Typical dry season humidity
+        
+        # Generate recommendations for each crop
+        crop_scores = []
+        all_crops = self.crop_db.get_all_crops()
+        
+        for crop_id, crop_data in all_crops.items():
+            score_data = self._calculate_dry_season_score(
+                crop_id, crop_data, dry_season_rainfall, dry_season_temp, 
+                dry_season_humidity
+            )
+            crop_scores.append(score_data)
+        
+        # Sort by total score
+        crop_scores.sort(key=lambda x: x['total_score'], reverse=True)
+        
+        # Generate variety recommendations for top crops
+        top_crops_with_varieties = self._add_variety_recommendations(
+            crop_scores[:5], dry_season_rainfall, dry_season_temp
+        )
+        
+        return {
+            'recommendations': top_crops_with_varieties,
+            'environmental_summary': {
+                'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
+                'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
+                'estimated_seasonal_rainfall': dry_season_rainfall,
+                'current_temperature': weather_data.get('temperature', dry_season_temp),
+                'humidity': weather_data.get('humidity', dry_season_humidity),
+                'current_season': 'dry_season',
+                'current_month': self.current_month
+            },
+            'analysis_timestamp': datetime.datetime.now().isoformat()
+        }
+    
+    def generate_all_seasons_comparison(self, 
+                                      rainfall_data: Dict[str, Any], 
+                                      weather_data: Dict[str, Any],
+                                      lat: float, 
+                                      lon: float) -> Dict[str, Any]:
+        """
+        Generate crop recommendations comparing all seasons.
+        
+        Args:
+            rainfall_data: Rainfall analysis data
+            weather_data: Current weather data
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            All seasons comparison results
+        """
+        logger.info(f"Generating all seasons comparison for coordinates: {lat}, {lon}")
+        
+        # Generate recommendations for each season
+        rainy_recommendations = self.generate_rainy_season_recommendations(
+            rainfall_data, weather_data, lat, lon
+        )
+        dry_recommendations = self.generate_dry_season_recommendations(
+            rainfall_data, weather_data, lat, lon
+        )
+        current_recommendations = self.generate_recommendations(
+            rainfall_data, weather_data, lat, lon
+        )
+        
+        # Combine and format for comparison
+        comparison_data = {
+            'rainy_season': {
+                'top_crops': rainy_recommendations['recommendations'][:3],
+                'environmental_summary': rainy_recommendations['environmental_summary']
+            },
+            'dry_season': {
+                'top_crops': dry_recommendations['recommendations'][:3],
+                'environmental_summary': dry_recommendations['environmental_summary']
+            },
+            'current_season': {
+                'top_crops': current_recommendations['recommendations'][:3],
+                'environmental_summary': current_recommendations['environmental_summary']
+            }
+        }
+        
+        # Find best overall crops across seasons
+        all_crops = self.crop_db.get_all_crops()
+        season_scores = {}
+        
+        for crop_id, crop_data in all_crops.items():
+            season_scores[crop_id] = {
+                'crop_data': crop_data,
+                'rainy_score': 0,
+                'dry_score': 0,
+                'current_score': 0,
+                'average_score': 0
+            }
+            
+            # Calculate scores for each season
+            rainy_score_data = self._calculate_rainy_season_score(
+                crop_id, crop_data, 800, 25, 70
+            )
+            dry_score_data = self._calculate_dry_season_score(
+                crop_id, crop_data, 50, 22, 40
+            )
+            current_score_data = self._calculate_crop_score(
+                crop_id, crop_data, 
+                rainfall_data.get('total_7day_rainfall', 0),
+                weather_data.get('temperature', 25),
+                weather_data.get('humidity', 50),
+                rainfall_data.get('rainy_days_forecast', 0),
+                self.crop_db.get_current_season(self.current_month)
+            )
+            
+            season_scores[crop_id]['rainy_score'] = rainy_score_data['total_score']
+            season_scores[crop_id]['dry_score'] = dry_score_data['total_score']
+            season_scores[crop_id]['current_score'] = current_score_data['total_score']
+            season_scores[crop_id]['average_score'] = (
+                rainy_score_data['total_score'] + 
+                dry_score_data['total_score'] + 
+                current_score_data['total_score']
+            ) / 3
+        
+        # Sort by average score to find best year-round crops
+        best_year_round = sorted(
+            season_scores.items(), 
+            key=lambda x: x[1]['average_score'], 
+            reverse=True
+        )[:5]
+        
+        # Format year-round recommendations
+        year_round_recommendations = []
+        for crop_id, scores in best_year_round:
+            year_round_recommendations.append({
+                'crop_id': crop_id,
+                'crop_data': scores['crop_data'],
+                'total_score': scores['average_score'],
+                'suitability_level': self._get_suitability_level(scores['average_score']),
+                'season_scores': {
+                    'rainy': scores['rainy_score'],
+                    'dry': scores['dry_score'],
+                    'current': scores['current_score']
+                },
+                'reasons': [f"Good performance across all seasons (avg: {scores['average_score']:.0f}/100)"]
+            })
+        
+        return {
+            'recommendations': year_round_recommendations,
+            'season_comparison': comparison_data,
+            'environmental_summary': current_recommendations['environmental_summary'],
+            'analysis_timestamp': datetime.datetime.now().isoformat()
+        }
+    
     def _calculate_crop_score(self, 
                             crop_id: str, 
                             crop_data: Dict[str, Any], 
@@ -203,6 +431,212 @@ class CropRecommendationEngine:
             'score_components': score_components,
             'reasons': reasons,
             'suitability_level': self._get_suitability_level(total_score)
+        }
+    
+    def _calculate_rainy_season_score(self, 
+                                    crop_id: str, 
+                                    crop_data: Dict[str, Any], 
+                                    seasonal_rainfall: float,
+                                    current_temp: float,
+                                    humidity: float) -> Dict[str, Any]:
+        """
+        Calculate score for a crop in rainy season conditions.
+        
+        Args:
+            crop_id: Crop identifier
+            crop_data: Crop data from database
+            seasonal_rainfall: Rainy season rainfall
+            current_temp: Rainy season temperature
+            humidity: Rainy season humidity
+            
+        Returns:
+            Rainy season crop score data
+        """
+        score_components = {
+            'rainfall_score': 0,
+            'temperature_score': 0,
+            'seasonal_score': 0,
+            'humidity_score': 0,
+            'timing_score': 0,
+            'drought_tolerance_score': 0
+        }
+        
+        # Rainfall scoring (35% weight) - rainy season is optimal for most crops
+        water_req = crop_data.get('water_requirements', {})
+        min_rainfall = water_req.get('minimum_rainfall', 0)
+        optimal_rainfall = water_req.get('optimal_rainfall', 0)
+        max_rainfall = water_req.get('maximum_rainfall', 2000)
+        
+        if seasonal_rainfall >= optimal_rainfall:
+            score_components['rainfall_score'] = 35
+        elif seasonal_rainfall >= min_rainfall:
+            score_components['rainfall_score'] = 25 + (seasonal_rainfall - min_rainfall) / (optimal_rainfall - min_rainfall) * 10
+        else:
+            score_components['rainfall_score'] = (seasonal_rainfall / min_rainfall) * 25
+        
+        # Temperature scoring (25% weight)
+        temp_req = crop_data.get('temperature_requirements', {})
+        min_temp = temp_req.get('minimum_temp', 0)
+        optimal_temp = temp_req.get('optimal_temp', 25)
+        max_temp = temp_req.get('maximum_temp', 40)
+        
+        if min_temp <= current_temp <= max_temp:
+            if abs(current_temp - optimal_temp) <= 3:
+                score_components['temperature_score'] = 25
+            else:
+                score_components['temperature_score'] = 20
+        else:
+            score_components['temperature_score'] = 10
+        
+        # Seasonal timing scoring (25% weight) - rainy season is main planting season
+        planting_calendar = crop_data.get('planting_calendar', {})
+        timing_score = 0
+        for window_name, window_data in planting_calendar.items():
+            start_month = window_data.get('start')
+            end_month = window_data.get('end')
+            months_in_window = self.crop_db._get_month_range(start_month, end_month)
+            
+            # Check if any rainy season months are in planting window
+            rainy_months = ['November', 'December', 'January', 'February', 'March', 'April']
+            if any(month in rainy_months for month in months_in_window):
+                timing_score = 25
+                break
+        
+        score_components['timing_score'] = timing_score
+        
+        # Humidity scoring (10% weight) - rainy season has high humidity
+        if humidity >= 60:
+            score_components['humidity_score'] = 10
+        elif humidity >= 40:
+            score_components['humidity_score'] = 7
+        else:
+            score_components['humidity_score'] = 3
+        
+        # Drought tolerance bonus (5% weight) - less important in rainy season
+        varieties = crop_data.get('varieties', [])
+        max_drought_tolerance = 0
+        for variety in varieties:
+            tolerance = variety.get('drought_tolerance', 'moderate')
+            tolerance_values = {'excellent': 3, 'good': 2, 'moderate': 1, 'poor': 0}
+            max_drought_tolerance = max(max_drought_tolerance, tolerance_values.get(tolerance, 1))
+        
+        score_components['drought_tolerance_score'] = max_drought_tolerance
+        
+        # Calculate total score
+        total_score = sum(score_components.values())
+        
+        # Generate reasons for recommendation
+        reasons = self._generate_score_reasons(score_components, crop_data, seasonal_rainfall, current_temp)
+        
+        return {
+            'crop_id': crop_id,
+            'crop_data': crop_data,
+            'total_score': total_score,
+            'suitability_level': self._get_suitability_level(total_score),
+            'score_components': score_components,
+            'reasons': reasons
+        }
+    
+    def _calculate_dry_season_score(self, 
+                                  crop_id: str, 
+                                  crop_data: Dict[str, Any], 
+                                  seasonal_rainfall: float,
+                                  current_temp: float,
+                                  humidity: float) -> Dict[str, Any]:
+        """
+        Calculate score for a crop in dry season conditions.
+        
+        Args:
+            crop_id: Crop identifier
+            crop_data: Crop data from database
+            seasonal_rainfall: Dry season rainfall
+            current_temp: Dry season temperature
+            humidity: Dry season humidity
+            
+        Returns:
+            Dry season crop score data
+        """
+        score_components = {
+            'rainfall_score': 0,
+            'temperature_score': 0,
+            'seasonal_score': 0,
+            'humidity_score': 0,
+            'timing_score': 0,
+            'drought_tolerance_score': 0
+        }
+        
+        # Rainfall scoring (30% weight) - dry season has limited rainfall
+        water_req = crop_data.get('water_requirements', {})
+        min_rainfall = water_req.get('minimum_rainfall', 0)
+        optimal_rainfall = water_req.get('optimal_rainfall', 0)
+        max_rainfall = water_req.get('maximum_rainfall', 2000)
+        
+        if seasonal_rainfall >= min_rainfall:
+            score_components['rainfall_score'] = 15 + (seasonal_rainfall - min_rainfall) / (optimal_rainfall - min_rainfall) * 15
+        else:
+            score_components['rainfall_score'] = (seasonal_rainfall / min_rainfall) * 15
+        
+        # Temperature scoring (25% weight)
+        temp_req = crop_data.get('temperature_requirements', {})
+        min_temp = temp_req.get('minimum_temp', 0)
+        optimal_temp = temp_req.get('optimal_temp', 25)
+        max_temp = temp_req.get('maximum_temp', 40)
+        
+        if min_temp <= current_temp <= max_temp:
+            if abs(current_temp - optimal_temp) <= 3:
+                score_components['temperature_score'] = 25
+            else:
+                score_components['temperature_score'] = 20
+        else:
+            score_components['temperature_score'] = 10
+        
+        # Seasonal timing scoring (20% weight) - dry season is preparation time
+        planting_calendar = crop_data.get('planting_calendar', {})
+        timing_score = 0
+        for window_name, window_data in planting_calendar.items():
+            start_month = window_data.get('start')
+            end_month = window_data.get('end')
+            months_in_window = self.crop_db._get_month_range(start_month, end_month)
+            
+            # Check if any dry season months are in planting window
+            dry_months = ['May', 'June', 'July', 'August', 'September', 'October']
+            if any(month in dry_months for month in months_in_window):
+                timing_score = 20
+                break
+        
+        score_components['timing_score'] = timing_score
+        
+        # Humidity scoring (10% weight) - dry season has low humidity
+        if humidity >= 40:
+            score_components['humidity_score'] = 10
+        elif humidity >= 20:
+            score_components['humidity_score'] = 7
+        else:
+            score_components['humidity_score'] = 3
+        
+        # Drought tolerance bonus (15% weight) - very important in dry season
+        varieties = crop_data.get('varieties', [])
+        max_drought_tolerance = 0
+        for variety in varieties:
+            tolerance = variety.get('drought_tolerance', 'moderate')
+            tolerance_values = {'excellent': 15, 'good': 12, 'moderate': 8, 'poor': 3}
+            max_drought_tolerance = max(max_drought_tolerance, tolerance_values.get(tolerance, 8))
+        
+        score_components['drought_tolerance_score'] = max_drought_tolerance
+        
+        # Calculate total score
+        total_score = sum(score_components.values())
+        
+        # Generate reasons for recommendation
+        reasons = self._generate_score_reasons(score_components, crop_data, seasonal_rainfall, current_temp)
+        
+        return {
+            'crop_id': crop_id,
+            'crop_data': crop_data,
+            'total_score': total_score,
+            'suitability_level': self._get_suitability_level(total_score),
+            'score_components': score_components,
+            'reasons': reasons
         }
     
     def _add_variety_recommendations(self, 
