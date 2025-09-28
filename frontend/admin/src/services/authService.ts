@@ -4,6 +4,22 @@ class AuthService {
   private baseUrl = '/api/admin';
 
   async login(credentials: LoginCredentials) {
+    // Development mode mock authentication
+    if (process.env.NODE_ENV === 'development' || true) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+      
+      return {
+        user: {
+          id: '1',
+          email: credentials.email,
+          name: 'Admin User',
+          role: 'admin' as const,
+          lastLogin: new Date().toISOString(),
+        },
+        token: 'mock_jwt_token_' + Date.now(),
+      };
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}/login`, {
         method: 'POST',
@@ -49,6 +65,19 @@ class AuthService {
     const token = localStorage.getItem('admin_token');
     if (!token) {
       throw new Error('No token found');
+    }
+
+    // Development mode mock user
+    if (process.env.NODE_ENV === 'development' || true) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      return {
+        id: '1',
+        email: 'admin@example.com',
+        name: 'Admin User',
+        role: 'admin',
+        lastLogin: new Date().toISOString(),
+      };
     }
 
     try {
