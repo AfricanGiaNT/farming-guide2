@@ -70,6 +70,277 @@ class SQLiteBasedRecommendationEngine:
         
         return recommendations
     
+    def get_specific_crop_recommendations(self, 
+                                        crop_name: str,
+                                        lat: float, 
+                                        lon: float, 
+                                        season: str,
+                                        rainfall_mm: float,
+                                        temperature: float,
+                                        historical_years: int = 5) -> Dict[str, Any]:
+        """
+        Get recommendations for a specific crop only - Phase 4 implementation.
+        
+        Args:
+            crop_name: Name of the specific crop to get recommendations for
+            lat: Latitude
+            lon: Longitude
+            season: Season (rainy_season, dry_season, current)
+            rainfall_mm: Rainfall in mm
+            temperature: Temperature in Celsius
+            historical_years: Number of years of historical data
+            
+        Returns:
+            Specific crop recommendations with detailed analysis
+        """
+        logger.info(f"Generating specific crop recommendations for '{crop_name}' at {lat}, {lon} in {season}")
+        
+        # Get historical weather data
+        historical_data = self.historical_api.get_historical_rainfall(
+            lat, lon, historical_years
+        )
+        
+        # Query agriculture guides specifically for the named crop
+        crop_guides = self._query_specific_crop_guides(crop_name, lat, lon, season, rainfall_mm, temperature)
+        
+        # Generate specific crop recommendations
+        recommendations = self._generate_specific_crop_recommendations(
+            crop_name, crop_guides, lat, lon, season, rainfall_mm, temperature, historical_data
+        )
+        
+        return recommendations
+    
+    def _query_specific_crop_guides(self, 
+                                   crop_name: str,
+                                   lat: float, 
+                                   lon: float, 
+                                   season: str,
+                                   rainfall_mm: float,
+                                   temperature: float) -> List[Dict[str, Any]]:
+        """
+        Query agriculture guide PDFs specifically for a named crop.
+        
+        Args:
+            crop_name: Name of the specific crop
+            lat: Latitude
+            lon: Longitude
+            season: Season
+            rainfall_mm: Rainfall in mm
+            temperature: Temperature in Celsius
+            
+        Returns:
+            List of relevant guide content for the specific crop
+        """
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Search specifically for the named crop
+                crop_search_terms = [
+                    crop_name.lower(),
+                    crop_name.title(),
+                    crop_name.upper(),
+                    f"{crop_name} cultivation",
+                    f"{crop_name} farming",
+                    f"{crop_name} planting",
+                    f"{crop_name} varieties",
+                    f"{crop_name} management"
+                ]
+                
+                guide_content = []
+                
+                for term in crop_search_terms:
+                    query = """
+                        SELECT chunk_id, text, source_doc, metadata
+                        FROM pdf_chunks 
+                        WHERE text LIKE ? 
+                        ORDER BY LENGTH(text) DESC
+                        LIMIT 20
+                    """
+                    cursor.execute(query, (f'%{term}%',))
+                    results = cursor.fetchall()
+                    
+                    for row in results:
+                        chunk_id, text, source_doc, metadata = row
+                        guide_content.append({
+                            'chunk_id': chunk_id,
+                            'text': text,
+                            'source_doc': source_doc,
+                            'metadata': json.loads(metadata) if metadata else {},
+                            'search_term': term,
+                            'relevance_score': self._calculate_crop_relevance(text, crop_name, season, rainfall_mm, temperature)
+                        })
+                
+                # Remove duplicates and sort by relevance
+                unique_content = {}
+                for content in guide_content:
+                    chunk_id = content['chunk_id']
+                    if chunk_id not in unique_content or content['relevance_score'] > unique_content[chunk_id]['relevance_score']:
+                        unique_content[chunk_id] = content
+                
+                sorted_content = sorted(unique_content.values(), key=lambda x: x['relevance_score'], reverse=True)
+                
+                logger.info(f"Found {len(sorted_content)} relevant chunks for '{crop_name}'")
+                return sorted_content[:15]  # Limit to top 15 most relevant chunks
+                
+        except Exception as e:
+            logger.error(f"Error querying specific crop guides for '{crop_name}': {e}")
+            return []
+    
+    def _generate_specific_crop_recommendations(self, 
+                                              crop_name: str,
+                                              crop_guides: List[Dict[str, Any]], 
+                                              lat: float, 
+                                              lon: float, 
+                                              season: str,
+                                              rainfall_mm: float,
+                                              temperature: float,
+                                              historical_data: HistoricalRainfallData) -> Dict[str, Any]:
+        """
+        Generate recommendations specifically for the named crop.
+        
+        Args:
+            crop_name: Name of the specific crop
+            crop_guides: Guide content for the specific crop
+            lat: Latitude
+            lon: Longitude
+            season: Season
+            rainfall_mm: Rainfall in mm
+            temperature: Temperature in Celsius
+            historical_data: Historical rainfall data
+            
+        Returns:
+            Specific crop recommendations with detailed analysis
+        """
+        if not crop_guides:
+            # Return "not suitable" analysis if no guides found
+            return self._generate_unsuitable_crop_analysis(crop_name, lat, lon, season, rainfall_mm, temperature)
+        
+        # Analyze crop suitability based on guides
+        suitability_analysis = self._analyze_crop_suitability(crop_name, crop_guides, season, rainfall_mm, temperature)
+        
+        # Extract crop-specific information
+        crop_info = self._extract_crop_information(crop_name, crop_guides)
+        
+        # Generate detailed recommendations
+        recommendations = [{
+            'crop_name': crop_name,
+            'suitability_score': suitability_analysis['score'],
+            'score': round(suitability_analysis['score'] * 100),
+            'suitability_level': suitability_analysis['level'],
+            'rainfall_match': suitability_analysis['rainfall_match'],
+            'temperature_match': suitability_analysis['temperature_match'],
+            'season_suitability': suitability_analysis['season_match'],
+            'sources': crop_info['sources'],
+            'guide_recommendations': crop_info['recommendations'],
+            'varieties': crop_info['varieties'],
+            'planting_time': crop_info['planting_time'],
+            'yield_potential': crop_info['yield_potential'],
+            'description': crop_info['description'],
+            'management_tips': crop_info['management_tips'],
+            'risk_assessment': crop_info['risk_assessment']
+        }]
+        
+        return {
+            'recommendations': recommendations,
+            'planting_advice': crop_info['planting_advice'],
+            'management_tips': crop_info['management_tips'],
+            'risk_assessment': crop_info['risk_assessment'],
+            'sources': crop_info['sources'],
+            'historical_data': historical_data.years_analyzed,
+            'location': {'lat': lat, 'lon': lon, 'region': self._get_region_name(lat, lon)},
+            'search_mode': 'specific_crop',
+            'crop_analyzed': crop_name
+        }
+    
+    def _generate_unsuitable_crop_analysis(self, 
+                                         crop_name: str,
+                                         lat: float, 
+                                         lon: float, 
+                                         season: str,
+                                         rainfall_mm: float,
+                                         temperature: float) -> Dict[str, Any]:
+        """
+        Generate analysis for crops that are not suitable for current conditions.
+        
+        Args:
+            crop_name: Name of the unsuitable crop
+            lat: Latitude
+            lon: Longitude
+            season: Season
+            rainfall_mm: Rainfall in mm
+            temperature: Temperature in Celsius
+            
+        Returns:
+            Analysis explaining why the crop is not suitable
+        """
+        # Basic suitability check based on common crop requirements
+        rainfall_suitable = 200 <= rainfall_mm <= 1200  # General range for most crops
+        temperature_suitable = 15 <= temperature <= 35   # General range for most crops
+        
+        suitability_score = 0.2  # Low score for unsuitable crops
+        if rainfall_suitable and temperature_suitable:
+            suitability_score = 0.4  # Slightly higher if basic conditions are met
+        
+        return {
+            'recommendations': [{
+                'crop_name': crop_name,
+                'suitability_score': suitability_score,
+                'score': round(suitability_score * 100),
+                'suitability_level': 'poor',
+                'rainfall_match': 'poor' if not rainfall_suitable else 'fair',
+                'temperature_match': 'poor' if not temperature_suitable else 'fair',
+                'season_suitability': 'poor',
+                'sources': ['General agricultural knowledge'],
+                'guide_recommendations': [
+                    f'{crop_name.title()} may not be suitable for current conditions',
+                    'Consider alternative crops better suited to your location and season',
+                    'Consult local agricultural extension services for specific advice'
+                ],
+                'varieties': [],
+                'planting_time': 'Not recommended',
+                'yield_potential': 'Low',
+                'description': f'{crop_name.title()} is not well-suited for current environmental conditions',
+                'management_tips': [
+                    'Consider soil and climate requirements for this crop',
+                    'Evaluate alternative crops for your region',
+                    'Consult with local agricultural experts'
+                ],
+                'risk_assessment': {
+                    'weather_risks': [
+                        f'Current rainfall ({rainfall_mm}mm) may not be optimal for {crop_name}',
+                        f'Current temperature ({temperature}°C) may not be suitable for {crop_name}'
+                    ],
+                    'pest_risks': ['High risk due to unsuitable growing conditions'],
+                    'disease_risks': ['High risk due to unsuitable growing conditions']
+                }
+            }],
+            'planting_advice': {
+                'optimal_planting_time': 'Not recommended',
+                'soil_preparation': 'Not applicable',
+                'spacing': 'Not applicable'
+            },
+            'management_tips': [
+                f'{crop_name.title()} is not recommended for current conditions',
+                'Consider crops better suited to your climate and soil',
+                'Consult local agricultural extension services'
+            ],
+            'risk_assessment': {
+                'weather_risks': [
+                    f'Current conditions are not suitable for {crop_name}',
+                    'Consider waiting for more favorable weather conditions'
+                ],
+                'pest_risks': ['High risk due to unsuitable conditions'],
+                'disease_risks': ['High risk due to unsuitable conditions']
+            },
+            'sources': ['General agricultural knowledge'],
+            'historical_data': 0,
+            'location': {'lat': lat, 'lon': lon, 'region': self._get_region_name(lat, lon)},
+            'search_mode': 'specific_crop',
+            'crop_analyzed': crop_name,
+            'unsuitable': True
+        }
+    
     def _query_crop_guides(self, 
                           lat: float, 
                           lon: float, 
@@ -908,6 +1179,238 @@ class SQLiteBasedRecommendationEngine:
             debug_info['error'] = str(e)
         
         return debug_info
+    
+    def _calculate_crop_relevance(self, text: str, crop_name: str, season: str, rainfall_mm: float, temperature: float) -> float:
+        """
+        Calculate relevance score for crop-specific content.
+        
+        Args:
+            text: Text content to analyze
+            crop_name: Name of the specific crop
+            season: Current season
+            rainfall_mm: Current rainfall
+            temperature: Current temperature
+            
+        Returns:
+            Relevance score between 0 and 1
+        """
+        score = 0.0
+        text_lower = text.lower()
+        crop_lower = crop_name.lower()
+        
+        # Direct crop name mentions
+        if crop_lower in text_lower:
+            score += 0.4
+        
+        # Crop-specific terms
+        crop_terms = [f"{crop_lower} cultivation", f"{crop_lower} farming", f"{crop_lower} planting", 
+                      f"{crop_lower} varieties", f"{crop_lower} management", f"{crop_lower} yield"]
+        for term in crop_terms:
+            if term in text_lower:
+                score += 0.1
+        
+        # Season relevance
+        if season in text_lower:
+            score += 0.1
+        
+        # Environmental conditions relevance
+        if any(condition in text_lower for condition in ['rainfall', 'temperature', 'climate', 'weather']):
+            score += 0.1
+        
+        # Management and cultivation terms
+        if any(term in text_lower for term in ['planting', 'harvesting', 'fertilizer', 'irrigation', 'pest', 'disease']):
+            score += 0.1
+        
+        # Length bonus (more detailed content)
+        if len(text) > 200:
+            score += 0.1
+        
+        return min(score, 1.0)
+    
+    def _analyze_crop_suitability(self, crop_name: str, crop_guides: List[Dict[str, Any]], season: str, rainfall_mm: float, temperature: float) -> Dict[str, Any]:
+        """
+        Analyze crop suitability based on guide content and environmental conditions.
+        
+        Args:
+            crop_name: Name of the crop
+            crop_guides: Guide content for the crop
+            season: Current season
+            rainfall_mm: Current rainfall
+            temperature: Current temperature
+            
+        Returns:
+            Suitability analysis results
+        """
+        # Get crop requirements
+        water_req = self._estimate_water_requirements(crop_name)
+        temp_req = self._estimate_temperature_requirements(crop_name)
+        
+        # Analyze rainfall suitability
+        if rainfall_mm >= water_req['minimum_rainfall'] and rainfall_mm <= water_req['maximum_rainfall']:
+            if rainfall_mm >= water_req['optimal_rainfall'] * 0.8 and rainfall_mm <= water_req['optimal_rainfall'] * 1.2:
+                rainfall_match = 'excellent'
+                rainfall_score = 1.0
+            else:
+                rainfall_match = 'good'
+                rainfall_score = 0.8
+        elif rainfall_mm >= water_req['minimum_rainfall'] * 0.7:
+            rainfall_match = 'fair'
+            rainfall_score = 0.6
+        else:
+            rainfall_match = 'poor'
+            rainfall_score = 0.3
+        
+        # Analyze temperature suitability
+        if temperature >= temp_req['minimum_temp'] and temperature <= temp_req['maximum_temp']:
+            if temperature >= temp_req['optimal_temp'] * 0.9 and temperature <= temp_req['optimal_temp'] * 1.1:
+                temperature_match = 'excellent'
+                temperature_score = 1.0
+            else:
+                temperature_match = 'good'
+                temperature_score = 0.8
+        elif temperature >= temp_req['minimum_temp'] * 0.8:
+            temperature_match = 'fair'
+            temperature_score = 0.6
+        else:
+            temperature_match = 'poor'
+            temperature_score = 0.3
+        
+        # Analyze season suitability
+        season_score = 0.7  # Default moderate suitability
+        season_match = 'good'
+        
+        # Check guide content for season-specific information
+        for guide in crop_guides:
+            text_lower = guide['text'].lower()
+            if season in text_lower:
+                season_score = 0.9
+                season_match = 'excellent'
+                break
+            elif any(term in text_lower for term in ['planting', 'cultivation', 'growing']):
+                season_score = 0.8
+                season_match = 'good'
+        
+        # Calculate overall suitability score
+        overall_score = (rainfall_score * 0.4 + temperature_score * 0.3 + season_score * 0.3)
+        
+        # Determine suitability level
+        if overall_score >= 0.8:
+            level = 'excellent'
+        elif overall_score >= 0.6:
+            level = 'good'
+        elif overall_score >= 0.4:
+            level = 'fair'
+        else:
+            level = 'poor'
+        
+        return {
+            'score': overall_score,
+            'level': level,
+            'rainfall_match': rainfall_match,
+            'temperature_match': temperature_match,
+            'season_match': season_match
+        }
+    
+    def _extract_crop_information(self, crop_name: str, crop_guides: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Extract crop-specific information from guide content.
+        
+        Args:
+            crop_name: Name of the crop
+            crop_guides: Guide content for the crop
+            
+        Returns:
+            Extracted crop information
+        """
+        sources = set()
+        recommendations = []
+        varieties = []
+        management_tips = []
+        risk_assessment = {'weather_risks': [], 'pest_risks': [], 'disease_risks': []}
+        
+        planting_time = 'Not specified'
+        yield_potential = 'Not specified'
+        description = f'{crop_name.title()} cultivation information'
+        
+        for guide in crop_guides:
+            text = guide['text']
+            source = guide['source_doc']
+            sources.add(source)
+            
+            # Extract recommendations
+            if any(term in text.lower() for term in ['recommend', 'suggest', 'advise', 'should', 'best practice']):
+                recommendations.append(text[:200] + '...' if len(text) > 200 else text)
+            
+            # Extract varieties
+            if 'variety' in text.lower() or 'cultivar' in text.lower():
+                # Simple extraction of variety names
+                import re
+                variety_matches = re.findall(r'\b[A-Z]{2,}\d+\b|\b[A-Z]+\d+\b', text)
+                varieties.extend(variety_matches[:3])  # Limit to 3 varieties
+            
+            # Extract management tips
+            if any(term in text.lower() for term in ['management', 'care', 'maintenance', 'fertilizer', 'irrigation']):
+                management_tips.append(text[:150] + '...' if len(text) > 150 else text)
+            
+            # Extract risk information
+            if 'risk' in text.lower() or 'pest' in text.lower() or 'disease' in text.lower():
+                if 'weather' in text.lower() or 'rainfall' in text.lower() or 'temperature' in text.lower():
+                    risk_assessment['weather_risks'].append(text[:100] + '...' if len(text) > 100 else text)
+                elif 'pest' in text.lower():
+                    risk_assessment['pest_risks'].append(text[:100] + '...' if len(text) > 100 else text)
+                elif 'disease' in text.lower():
+                    risk_assessment['disease_risks'].append(text[:100] + '...' if len(text) > 100 else text)
+            
+            # Extract planting time
+            if 'planting' in text.lower() and ('month' in text.lower() or 'season' in text.lower()):
+                planting_time = 'See guide recommendations'
+            
+            # Extract yield information
+            if 'yield' in text.lower() and ('ton' in text.lower() or 'kg' in text.lower()):
+                yield_potential = 'See guide recommendations'
+        
+        # Limit lists to prevent overwhelming output
+        recommendations = recommendations[:5]
+        management_tips = management_tips[:5]
+        varieties = list(set(varieties))[:5]  # Remove duplicates
+        
+        return {
+            'sources': list(sources),
+            'recommendations': recommendations,
+            'varieties': varieties,
+            'management_tips': management_tips,
+            'risk_assessment': risk_assessment,
+            'planting_time': planting_time,
+            'yield_potential': yield_potential,
+            'description': description,
+            'planting_advice': {
+                'optimal_planting_time': planting_time,
+                'soil_preparation': 'See guide recommendations',
+                'spacing': 'See guide recommendations'
+            }
+        }
+    
+    def _get_region_name(self, lat: float, lon: float) -> str:
+        """
+        Get region name based on coordinates.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            
+        Returns:
+            Region name
+        """
+        # Malawi regions based on coordinates
+        if -16.0 <= lat <= -13.0 and 32.0 <= lon <= 35.0:
+            if lat >= -14.5:
+                return 'Central Region'
+            elif lat >= -15.5:
+                return 'Southern Region'
+            else:
+                return 'Northern Region'
+        else:
+            return 'Unknown Region'
 
 
 # Create global instance

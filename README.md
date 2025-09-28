@@ -13,6 +13,8 @@ A smart, region-specific Telegram bot that provides agricultural advice for Lilo
 - Location-based crop suggestions
 - Rainfall-optimized varieties
 - Seasonal planting advice
+- AI-enhanced summaries and insights
+- Intelligent data processing and validation
 
 🌿 **Variety Information**
 - Specific variety names and types

@@ -44,15 +44,16 @@ export interface CropRecommendation {
 }
 
 export interface CropVariety {
-  id: string;
   name: string;
-  crop: string;
+  maturity_days: number;
+  yield_potential: string;
+  drought_tolerance: string;
+  disease_resistance: string;
+  planting_time: string;
   description: string;
-  maturityDays: number;
-  yieldPotential: string;
-  diseaseResistance: string[];
-  characteristics: string[];
-  recommendations: string[];
+  weather_requirements?: string;
+  soil_requirements?: string;
+  growing_areas?: string;
 }
 
 export interface SearchResult {

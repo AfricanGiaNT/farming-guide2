@@ -22,13 +22,18 @@ import time
 from datetime import datetime, timedelta
 import calendar
 
+# Configuration constants
+DEFAULT_VARIETY_LIMIT = 5
+MAX_VARIETY_LIMIT = 20
+DEFAULT_SEARCH_LIMIT = 10
+MAX_SEARCH_LIMIT = 50
 
 class VarietiesHandler:
     """Handler for crop variety information and recommendations."""
     
     def __init__(self):
         """Initialize varieties handler."""
-        self.db_path = "data/farming_guide_vectors.db"
+        self.db_path = "data/agricultural_documents.db"
         self.embedding_generator = EmbeddingGenerator()
         
         # Phase 2: Weather analysis components
@@ -81,7 +86,7 @@ class VarietiesHandler:
             
         logger.info("Varieties handler initialized with weather integration and planting calendar")
     
-    def search_varieties_knowledge(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search_varieties_knowledge(self, query: str, top_k: int = DEFAULT_SEARCH_LIMIT) -> List[Dict[str, Any]]:
         """
         Search the knowledge base for variety-specific information.
         
@@ -93,16 +98,51 @@ class VarietiesHandler:
             List of search results with content and scores
         """
         try:
-            # Generate query embedding
-            query_embedding = self.embedding_generator.generate_query_embedding(query)
-            if not query_embedding:
-                logger.error("Failed to generate query embedding")
-                return []
-            
             # Connect to SQLite database
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
+            
+            # Extract crop name from query for keyword search
+            crop_name = query.lower().split()[0] if query else ""
+            
+            # First try keyword search for better variety matching
+            keyword_query = f"""
+            SELECT content, source, metadata, embedding FROM documents 
+            WHERE length(content) > 50 
+            AND (content LIKE '%{crop_name}%' OR content LIKE '%variety%' OR content LIKE '%cultivar%')
+            AND (content LIKE '%CG%' OR content LIKE '%Chalimbana%' OR content LIKE '%Nsinjiro%' OR content LIKE '%Kakoma%' OR content LIKE '%Chitala%' OR content LIKE '%Baka%')
+            ORDER BY 
+                CASE 
+                    WHEN content LIKE '%CG 7%' OR content LIKE '%CG 8%' OR content LIKE '%CG 9%' THEN 1
+                    WHEN content LIKE '%Chalimbana%' OR content LIKE '%Nsinjiro%' THEN 2
+                    ELSE 3
+                END
+            """
+            
+            cursor.execute(keyword_query)
+            keyword_results = cursor.fetchall()
+            
+            if len(keyword_results) >= top_k:
+                # If we found enough results with keyword search, use those
+                results = []
+                for row in keyword_results:
+                    results.append({
+                        'content': row['content'],
+                        'source': row['source'],
+                        'metadata': json.loads(row['metadata']) if row['metadata'] else {},
+                        'score': 0.9  # High score for keyword matches
+                    })
+                conn.close()
+                logger.info(f"Found {len(results[:top_k])} relevant documents via keyword search for query: {query}")
+                return list(results[:top_k])
+            
+            # Fallback to semantic search if keyword search didn't find enough
+            query_embedding = self.embedding_generator.generate_query_embedding(query)
+            if not query_embedding:
+                logger.error("Failed to generate query embedding")
+                conn.close()
+                return []
             
             # Get all documents and calculate similarity
             cursor.execute("SELECT content, source, metadata, embedding FROM documents WHERE length(content) > 50")
@@ -132,7 +172,7 @@ class VarietiesHandler:
             conn.close()
             
             logger.info(f"Found {len(results[:top_k])} relevant documents for query: {query}")
-            return results[:top_k]
+            return list(results[:top_k])
             
         except Exception as e:
             logger.error(f"Error searching varieties knowledge: {e}")
@@ -814,7 +854,7 @@ class VarietiesHandler:
         
         return sentence
 
-    def parse_varieties_with_ai(self, search_results: List[Dict[str, Any]], crop_name: str) -> Dict[str, List[Dict]]:
+    def parse_varieties_with_ai(self, search_results: List[Dict[str, Any]], crop_name: str, max_varieties: int = DEFAULT_VARIETY_LIMIT) -> Dict[str, List[Dict]]:
         """
         Use OpenAI to parse search results and extract structured variety information.
         
@@ -832,81 +872,50 @@ class VarietiesHandler:
         try:
             # Combine top search results into context (reduced size)
             context_text = ""
-            for i, result in enumerate(search_results[:5]):  # Reduced from 8 to 5
-                if result['score'] > 0.75:  # Higher threshold for faster processing
+            # Use configurable limit for search results processing
+            search_limit = min(len(search_results), MAX_SEARCH_LIMIT)
+            logger.info(f"Processing {search_limit} search results for AI parsing")
+            for i, result in enumerate(search_results[:search_limit]):
+                logger.info(f"Result {i+1} score: {result.get('score', 'N/A')}")
+                if result['score'] > 0.5:  # Lower threshold to include more variety results
                     # Truncate very long content
                     content = result['content']
-                    if len(content) > 800:  # Limit content length
-                        content = content[:800] + "..."
+                    if len(content) > 1500:  # Increased limit to capture variety lists
+                        content = content[:1500] + "..."
                     context_text += f"Source {i+1}: {content}\n\n"
             
             if not context_text:
                 return self._get_empty_varieties_info()
             
-            # Create more concise prompt for OpenAI
-            prompt = f"""
-You are an agricultural expert. Extract information about SPECIFIC {crop_name} CULTIVAR NAMES from these documents:
+            # Log the context being sent to AI
+            logger.info(f"Context length: {len(context_text)} characters")
+            logger.info(f"Context preview: {context_text[:1000]}...")
+            
+            # Check if context contains variety names
+            variety_names = ['CG 7', 'CG 8', 'CG 9', 'Chalimbana 2005', 'Nsinjiro', 'Kakoma', 'Chitala', 'Baka']
+            found_in_context = [name for name in variety_names if name in context_text]
+            logger.info(f"Variety names found in context: {found_in_context}")
+            
+            # Create focused prompt for variety name extraction
+            prompt = f"""Extract ALL variety names from this text about {crop_name}:
 
 {context_text}
 
-CRITICAL: Look for EXACT cultivar names, variety codes, and released variety names. NOT general types.
+Look for variety names like: CG 7, CG 8, CG 9, CG 10, CG 11, Chalimbana 2005, Nsinjiro, CG 12, CG 13, CG 14, Chitala, Kakoma, Baka
 
-SPECIFIC NAMES TO LOOK FOR:
-- Cultivar codes: "CG7", "CG9", "CG11", "SC 301", "SC 627", "SC 719"
-- Named varieties: "Nsinjiro", "Makwacha", "Nasoko", "Baka SB", "Kholophethe"
-- Released varieties: "Chalimbana", "Chitembana", "Maluwa"
-
-AVOID generic descriptions like:
-- "Virginia type", "Spanish type", "Hybrid", "Open pollinated"
-- "Early maturing variety", "High yielding variety"
-- "Improved variety", "Local variety"
-
-For EACH SPECIFIC CULTIVAR NAME you find, extract:
-- name: The exact cultivar name/code (e.g., "CG7", "Nsinjiro")
-- planting_time: When to plant this specific cultivar
-- yield: Expected yield for this specific cultivar
-- weather: Weather/climate needs for this specific cultivar
-- soil: Soil requirements for this specific cultivar
-- areas: Where this specific cultivar is grown
-
-Return JSON like this:
+Return JSON with ALL variety names found:
 {{
   "varieties": [
-    {{
-      "name": "CG7",
-      "planting_time": "timing info",
-      "yield": "yield info",
-      "weather": "weather info",
-      "soil": "soil info",
-      "areas": "location info"
-    }},
-    {{
-      "name": "CG9",
-      "planting_time": "timing info",
-      "yield": "yield info",
-      "weather": "weather info",
-      "soil": "soil info",
-      "areas": "location info"
-    }},
-    {{
-      "name": "Nsinjiro",
-      "planting_time": "timing info",
-      "yield": "yield info",
-      "weather": "weather info",
-      "soil": "soil info",
-      "areas": "location info"
-    }}
+    {{"name": "CG 7", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
+    {{"name": "CG 8", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
+    {{"name": "CG 9", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
+    {{"name": "Chalimbana 2005", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
+    {{"name": "Nsinjiro", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
+    {{"name": "Kakoma", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}}
   ]
 }}
 
-CRITICAL REQUIREMENTS:
-- Only include varieties with SPECIFIC names (not generic types)
-- Look for variety names mentioned in tables, lists, or descriptions
-- Include variety codes (letters + numbers like CG7, SC301)
-- Include proper variety names (like Nsinjiro, Makwacha)
-- Each variety must have a unique, specific name
-- Use "Not specified" if information is missing for a field
-- Focus on released/recommended varieties
+Extract ALL variety names mentioned in the text. Do not limit to just 2 varieties.
 """
 
             # Call OpenAI with timeout
@@ -937,13 +946,19 @@ CRITICAL REQUIREMENTS:
                 
                 if json_start != -1 and json_end != -1:
                     json_text = response_text[json_start:json_end]
+                    logger.debug(f"AI JSON response: {json_text}")
                     parsed_info = json.loads(json_text)
                     
                     # Validate and clean the parsed info
                     if 'varieties' in parsed_info and isinstance(parsed_info['varieties'], list):
+                        logger.info(f"AI found {len(parsed_info['varieties'])} varieties in response")
                         clean_varieties = []
                         
-                        for variety in parsed_info['varieties'][:5]:  # Max 5 varieties
+                        # Safely slice the varieties list
+                        varieties_list = parsed_info['varieties']
+                        actual_max = min(max_varieties, len(varieties_list)) if varieties_list else 0
+                        
+                        for variety in varieties_list[:actual_max]:  # Use configurable limit
                             if isinstance(variety, dict) and 'name' in variety:
                                 clean_variety = {}
                                 variety_name = variety['name'].strip()
@@ -962,11 +977,15 @@ CRITICAL REQUIREMENTS:
                                     not any(char.isdigit() for char in variety_name)):
                                     continue
                                 
-                                # Prefer names with codes (letters + numbers) or specific proper names
+                                # Accept names with codes (letters + numbers) or specific proper names
                                 has_code = any(char.isdigit() for char in variety_name) and any(char.isalpha() for char in variety_name)
                                 is_proper_name = variety_name[0].isupper() and len(variety_name) > 3
+                                is_known_variety = variety_name.lower().replace(' ', '') in [
+                                    'cg7', 'cg8', 'cg9', 'cg10', 'cg11', 'cg12', 'cg13', 'cg14',
+                                    'chalimbana2005', 'chalimbana', 'nsinjiro', 'kakoma', 'chitala', 'baka'
+                                ]
                                 
-                                if not (has_code or is_proper_name):
+                                if not (has_code or is_proper_name or is_known_variety):
                                     continue
                                 
                                 # Add the variety name
@@ -996,6 +1015,9 @@ CRITICAL REQUIREMENTS:
                 
         except Exception as e:
             logger.error(f"Error in AI parsing: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             
         # Fallback to empty info if AI parsing fails
         return self._get_empty_varieties_info()
