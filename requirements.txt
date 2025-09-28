@@ -34,3 +34,22 @@ asyncpg>=0.29.0  # Async PostgreSQL driver (optional)
 
 # Note: pgvector extension must be installed separately on PostgreSQL server
 # See docs/postgresql_vector_database_guide.md for setup instructions 
+asyncpg
+certifi==2023.11.17
+faiss-cpu
+flask
+flask-cors
+numpy
+openai
+pandas
+psycopg2-binary
+PyPDF2
+pytest
+python-dateutil==2.8.2
+python-dotenv==1.0.0
+python-telegram-bot==20.7
+requests==2.31.0
+sqlalchemy
+telegram
+tiktoken
+urllib3==2.1.0
