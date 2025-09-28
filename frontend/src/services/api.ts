@@ -3,7 +3,18 @@
  * Connects to the Flask backend running on port 8000
  */
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// API configuration - Use Replit domain if available, otherwise localhost for development
+const getApiBaseUrl = () => {
+  // Try to detect Replit environment
+  if (typeof window !== 'undefined' && window.location.hostname.includes('replit.dev')) {
+    // In Replit, use the same domain with port 8000
+    return `https://${window.location.hostname}:8000/api`;
+  }
+  // Default to localhost for local development
+  return 'http://localhost:8000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Types for API responses
 export interface WeatherData {

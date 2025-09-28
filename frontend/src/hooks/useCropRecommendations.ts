@@ -8,7 +8,14 @@ const getVarietyInformation = async (cropName: string, lat?: number, lon?: numbe
     params.append('lon', lon.toString())
   }
   const queryString = params.toString()
-  const url = `http://localhost:8000/api/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
+  // Use Replit domain if available, otherwise localhost for development
+  const getApiBase = () => {
+    if (typeof window !== 'undefined' && window.location.hostname.includes('replit.dev')) {
+      return `https://${window.location.hostname}:8000/api`;
+    }
+    return 'http://localhost:8000/api';
+  };
+  const url = `${getApiBase()}/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
   
   const response = await fetch(url)
   if (!response.ok) {
