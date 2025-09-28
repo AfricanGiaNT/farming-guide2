@@ -1,0 +1,158 @@
+Create a modern admin dashboard for managing an agricultural knowledge base system with the following requirements:
+
+## Core Features
+
+### 1. Authentication & Security
+- Secure admin login with email/password authentication
+- JWT token-based session management
+- Role-based access control (only admins can access)
+- Session timeout and logout functionality
+- Password reset capability
+
+### 2. Knowledge Base Management
+- **Multiple Database Selection**: Toggle between different knowledge bases (varieties, weather data, crop guides, etc.)
+- **Document Management**: 
+  - Upload new PDF documents to the knowledge base
+  - View list of all documents with metadata (filename, upload date, size, status)
+  - Delete or archive documents
+  - Preview document content
+- **Variety Management**:
+  - CRUD operations for crop varieties (Create, Read, Update, Delete)
+  - Bulk import/export varieties via CSV
+  - Search and filter varieties by crop type, yield, maturity days
+  - Form validation for variety data fields
+
+### 3. Data Visualization & Analytics
+- Dashboard overview with key metrics:
+  - Total documents in each knowledge base
+  - Number of varieties per crop type
+  - Recent activity logs
+  - System health status
+- Charts showing:
+  - Variety distribution by crop type (pie chart)
+  - Upload activity over time (line chart)
+  - Search query analytics
+
+### 4. Search & Content Management
+- **Advanced Search Interface**:
+  - Search across all documents and varieties
+  - Filter by document type, crop, date range
+  - Preview search results with highlighting
+- **Content Editor**:
+  - Rich text editor for modifying document descriptions
+  - Batch editing capabilities
+  - Version control for changes
+
+### 5. System Administration
+- **Processing Queue**: View and manage document processing status
+- **Database Operations**: 
+  - Trigger re-indexing of documents
+  - Clear cache
+  - Export database backups
+- **User Activity Logs**: Track all admin actions with timestamps
+- **System Settings**: Configure API endpoints, processing parameters
+
+## Technical Requirements
+
+### UI/UX Design
+- Clean, modern design using Tailwind CSS
+- Responsive layout (desktop-first, mobile-friendly)
+- Dark mode toggle
+- Sidebar navigation with collapsible sections
+- Loading states and progress indicators
+- Toast notifications for user feedback
+- Confirmation dialogs for destructive actions
+
+### API Integration
+- RESTful API calls to backend endpoints:
+  - GET /api/admin/documents - List all documents
+  - POST /api/admin/documents - Upload new document
+  - DELETE /api/admin/documents/:id - Remove document
+  - GET /api/admin/varieties - List varieties
+  - POST/PUT/DELETE /api/admin/varieties - CRUD operations
+  - GET /api/admin/stats - Dashboard metrics
+- Error handling with user-friendly messages
+- Retry logic for failed requests
+
+### Data Tables & Forms
+- **Sortable Data Tables** with:
+  - Pagination (50 items per page)
+  - Column sorting and filtering
+  - Bulk selection with actions
+  - Export to CSV functionality
+- **Smart Forms** with:
+  - Real-time validation
+  - Auto-save drafts
+  - Field dependencies (e.g., variety fields based on selected crop)
+
+### File Management
+- Drag-and-drop file upload with progress bars
+- File type validation (PDF, CSV)
+- Preview thumbnails for documents
+- Batch upload capability
+
+## Page Structure
+
+### 1. Login Page
+- Clean login form with company branding
+- "Remember me" checkbox
+- Forgot password link
+- Loading spinner during authentication
+
+### 2. Dashboard Overview
+- Welcome message with admin name
+- Key metrics cards (total docs, varieties, recent uploads)
+- Recent activity feed
+- Quick action buttons
+
+### 3. Documents Manager
+- File browser interface
+- Upload area with drag-and-drop
+- Document list with search/filter
+- Document preview modal
+
+### 4. Varieties Manager
+- Crop selector dropdown
+- Varieties data table with inline editing
+- Add new variety form
+- Bulk operations toolbar
+
+### 5. System Settings
+- Configuration tabs (General, API, Processing)
+- System health indicators
+- Database management tools
+- Export/import utilities
+
+## Sample API Endpoints Expected
+```javascript
+// Authentication
+POST /api/admin/login
+POST /api/admin/logout
+POST /api/admin/refresh-token
+
+// Documents
+GET /api/admin/documents?page=1&limit=50&search=maize
+POST /api/admin/documents (file upload)
+DELETE /api/admin/documents/:id
+GET /api/admin/documents/:id/preview
+
+// Varieties
+GET /api/admin/varieties?crop=groundnut
+POST /api/admin/varieties
+PUT /api/admin/varieties/:id
+DELETE /api/admin/varieties/:id
+
+// System
+GET /api/admin/stats
+POST /api/admin/reindex
+GET /api/admin/logs
+```
+
+## Additional Features
+- **Keyboard Shortcuts**: Common actions (Ctrl+S to save, Ctrl+F to search)
+- **Offline Indicators**: Show when connection is lost
+- **Auto-refresh**: Periodically update dashboard data
+- **Help Documentation**: Inline help tooltips and user guide
+- **Audit Trail**: Log all changes with user attribution
+
+Use React with TypeScript, implement proper error boundaries, and ensure accessibility compliance (WCAG 2.1). The design should feel professional yet approachable, similar to modern admin dashboards like Vercel or Netlify.
