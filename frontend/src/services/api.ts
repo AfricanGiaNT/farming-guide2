@@ -39,12 +39,40 @@ export interface WeatherData {
 }
 
 export interface CropRecommendation {
-  crop: string;
+  crop_data?: {
+    name: string;
+    category: string;
+    description: string;
+    temperature_requirements?: {
+      minimum_temp: number;
+      maximum_temp: number;
+      optimal_temp: number;
+    };
+    water_requirements?: {
+      minimum_rainfall: number;
+      maximum_rainfall: number;
+      optimal_rainfall: number;
+    };
+  };
   score: number;
-  varieties: string[];
-  planting_time: string;
-  yield_potential: string;
-  description: string;
+  total_score?: number;
+  suitability_level: string;
+  suitability_score: number;
+  sources: string[];
+  guide_recommendations: string[];
+  reasons: string[];
+  score_components: {
+    content_quality: number;
+    guide_relevance: number;
+    seasonal_match: number;
+  };
+  source: string;
+  // Legacy properties for backward compatibility
+  crop?: string;
+  varieties?: string[];
+  planting_time?: string;
+  yield_potential?: string;
+  description?: string;
 }
 
 export interface CropResponse {
@@ -102,6 +130,8 @@ export interface CategoriesResponse {
 export interface HistoricalWeatherData {
   location: string;
   years_analyzed: number;
+  period_start?: string;
+  period_end?: string;
   monthly_averages: {
     [month: string]: {
       average_rainfall: number;
@@ -111,21 +141,97 @@ export interface HistoricalWeatherData {
       years_analyzed: number;
     };
   };
+  key_monthly_averages?: {
+    [month: string]: {
+      average_rainfall: number;
+      min_rainfall: number;
+      max_rainfall: number;
+      average_temperature: number;
+      years_analyzed: number;
+    };
+  };
+  yearly_breakdown?: Array<{
+    year: number;
+    annual_rainfall: number;
+    avg_temperature: number;
+    wettest_month: string;
+    driest_month: string;
+    monthly_summary: {
+      wet_season_total: number;
+      dry_season_total: number;
+    };
+  }>;
   climate_summary: {
     total_annual_rainfall: number;
     wettest_month: string;
     driest_month: string;
     climate_trend: string;
     drought_risk: string;
+    analysis_period?: string;
   };
   agricultural_implications: {
     wet_season: string;
     dry_season: string;
     planting_window: string;
     harvest_period: string;
+    data_note?: string;
   };
   timestamp: string;
   mock_data?: boolean;
+}
+
+export interface ApiResponse<T> {
+  status: 'success' | 'error';
+  message?: string;
+  data: T;
+  timestamp: string;
+}
+
+export interface ExtractedVariety {
+  crop_name: string;
+  variety_name: string;
+  variety_type?: string;
+  yield_potential?: string;
+  maturity_days?: number;
+  weather_requirements?: string;
+  soil_requirements?: string;
+  growing_areas?: string;
+  disease_resistance?: string;
+  planting_time?: string;
+  source_document?: string;
+  confidence_score?: number;
+  validation_status?: string;
+  extraction_session_id: string;
+  context?: string;
+}
+
+export interface VarietyExtractionStats {
+  documents_processed: number;
+  varieties_extracted: number;
+  crops_processed: string[];
+}
+
+export interface VarietyExtractionResult {
+  session_id: string | null;
+  varieties: ExtractedVariety[];
+  stats: VarietyExtractionStats;
+}
+
+export interface VarietyExtractionParams {
+  crops?: string[];
+  documents?: string[];
+  clear_existing?: boolean;
+}
+
+export interface VarietyValidationPayload {
+  session_id: string;
+  selected_varieties: ExtractedVariety[];
+  clear_existing?: boolean;
+}
+
+export interface VarietyValidationResult {
+  session_id: string;
+  varieties_saved: number;
 }
 
 // API Service Class
@@ -199,6 +305,20 @@ class ApiService {
       limit: limit.toString(),
     });
     return this.request(`/search?${params}`);
+  }
+
+  async extractVarietiesForValidation(params: VarietyExtractionParams = {}): Promise<ApiResponse<VarietyExtractionResult>> {
+    return this.request('/admin/varieties/extract', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async validateSelectedVarieties(payload: VarietyValidationPayload): Promise<ApiResponse<VarietyValidationResult>> {
+    return this.request('/admin/varieties/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   // Categories API

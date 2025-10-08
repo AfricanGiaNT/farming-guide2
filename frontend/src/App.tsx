@@ -6,6 +6,7 @@ import Weather from './pages/Weather';
 import Crops from './pages/Crops';
 import Varieties from './pages/Varieties';
 import Search from './pages/Search';
+import AdminVarieties from './pages/AdminVarieties';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/crops" element={<Crops />} />
           <Route path="/varieties" element={<Varieties />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/admin/varieties" element={<AdminVarieties />} />
         </Routes>
       </Layout>
     </Router>

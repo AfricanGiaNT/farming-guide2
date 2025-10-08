@@ -187,3 +187,109 @@ export interface ConfirmDialogState {
   onConfirm?: () => void;
   onCancel?: () => void;
 }
+
+// Knowledge Base Types
+export interface KnowledgeBaseStatus {
+  total_vectors?: number;
+  chunk_size?: number;
+  overlap?: number;
+  embedding_model?: string;
+  embedding_cache_size?: number;
+  processed_documents?: string[];
+  storage_path?: string;
+  dimension?: number;
+}
+
+export interface DocumentSummary {
+  document_name: string;
+  chunk_count: number;
+  total_tokens: number;
+  sample_text: string;
+  file_path: string;
+  document_type: string;
+}
+
+export interface SearchResult {
+  text: string;
+  score: number;
+  metadata: {
+    source_document: string;
+    file_path: string;
+    document_type: string;
+  };
+  text_preview: string;
+  relevance: 'high' | 'medium' | 'low';
+  query?: string;
+}
+
+export interface UploadProgress {
+  file: File;
+  progress: number;
+  status: 'uploading' | 'processing' | 'completed' | 'error';
+  message?: string;
+}
+
+// Varieties Types
+export interface Variety {
+  id: number;
+  crop_name: string;
+  variety_name: string;
+  variety_type?: string;
+  yield_potential?: string;
+  maturity_days?: number;
+  weather_requirements?: string;
+  soil_requirements?: string;
+  growing_areas?: string;
+  disease_resistance?: string;
+  planting_time?: string;
+  source_document: string;
+  confidence_score?: number;
+  validation_status?: string;
+  extraction_session_id?: string;
+  created_at: string;
+}
+
+export interface VarietiesStatus {
+  total_varieties: number;
+  crop_counts: Array<{
+    crop: string;
+    count: number;
+  }>;
+  recent_additions: number;
+  database_path: string;
+}
+
+export interface ExtractionStats {
+  documents_processed: number;
+  varieties_extracted: number;
+  crops_processed: string[];
+}
+
+export interface ExtractedVarietyPreview {
+  crop_name: string;
+  variety_name: string;
+  variety_type?: string;
+  yield_potential?: string;
+  maturity_days?: number;
+  weather_requirements?: string;
+  soil_requirements?: string;
+  growing_areas?: string;
+  disease_resistance?: string;
+  planting_time?: string;
+  source_document?: string;
+  confidence_score?: number;
+  validation_status?: string;
+  extraction_session_id?: string;
+  context?: string;
+}
+
+export interface ExtractionPreview {
+  session_id: string | null;
+  varieties: ExtractedVarietyPreview[];
+  stats: ExtractionStats;
+}
+
+export interface VarietyValidationResult {
+  session_id: string;
+  varieties_saved: number;
+}

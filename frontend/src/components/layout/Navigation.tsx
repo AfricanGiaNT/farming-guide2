@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Cloud, Sprout, Search, Database } from 'lucide-react';
+import { Home, Cloud, Sprout, Search, Database, Shield } from 'lucide-react';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -10,7 +10,8 @@ const Navigation: React.FC = () => {
     { path: '/weather', icon: Cloud, label: 'Weather' },
     { path: '/crops', icon: Sprout, label: 'Crops' },
     { path: '/varieties', icon: Database, label: 'Varieties' },
-    { path: '/search', icon: Search, label: 'Search' }
+    { path: '/search', icon: Search, label: 'Search' },
+    { path: '/admin/varieties', icon: Shield, label: 'Admin' }
   ];
 
   const isActive = (path: string) => location.pathname === path;

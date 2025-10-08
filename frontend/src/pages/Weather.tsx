@@ -350,15 +350,23 @@ const Weather: React.FC = () => {
         <>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 flex-wrap">
                 <TrendingUp size={20} />
-                Historical Weather Data for {currentLocation} ({historicalData.years_analyzed} years)
+                <span>Historical Weather Data for {currentLocation}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  ({historicalData.years_analyzed} year{historicalData.years_analyzed > 1 ? 's' : ''})
+                </span>
                 {historicalData.mock_data && (
                   <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                     Demo Data
                   </span>
                 )}
               </CardTitle>
+              {(historicalData as any).period_start && (historicalData as any).period_end && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Analysis Period: {new Date((historicalData as any).period_start).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} to {new Date((historicalData as any).period_end).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-4 gap-4 mb-6">
@@ -402,24 +410,89 @@ const Weather: React.FC = () => {
                 </div>
               </div>
 
-              {/* Monthly Breakdown */}
+              {/* Monthly Breakdown - Simplified for Multi-Year Data */}
               <div>
-                <h4 className="font-semibold text-gray-800 mb-3">Monthly Historical Averages</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {Object.entries(historicalData.monthly_averages).map(([month, data]) => (
-                    <div key={month} className="bg-gray-50 p-3 rounded-lg">
-                      <div className="font-semibold text-gray-800 text-sm mb-1">{month}</div>
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <div>Rainfall: {data.average_rainfall}mm</div>
-                        <div>Temp: {data.average_temperature}°C</div>
-                        <div className="text-xs text-gray-500">
-                          Range: {data.min_rainfall}-{data.max_rainfall}mm
+                <h4 className="font-semibold text-gray-800 mb-3">
+                  {historicalData.years_analyzed > 1 ? 'Key Monthly Averages' : 'Monthly Historical Averages'}
+                </h4>
+                
+                {historicalData.years_analyzed > 1 ? (
+                  // Simplified view for multi-year data
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {Object.entries(historicalData.key_monthly_averages || historicalData.monthly_averages).map(([month, data]) => (
+                      <div key={month} className="bg-gray-50 p-3 rounded-lg">
+                        <div className="font-semibold text-gray-800 text-sm mb-1">{month}</div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div>Rainfall: {data.average_rainfall}mm</div>
+                          <div>Temp: {data.average_temperature}°C</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Full view for single year data
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.entries(historicalData.monthly_averages).map(([month, data]) => (
+                      <div key={month} className="bg-gray-50 p-3 rounded-lg">
+                        <div className="font-semibold text-gray-800 text-sm mb-1">{month}</div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div>Rainfall: {data.average_rainfall}mm</div>
+                          <div>Temp: {data.average_temperature}°C</div>
+                          <div className="text-xs text-gray-500">
+                            Range: {data.min_rainfall}-{data.max_rainfall}mm
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+              
+              {/* Yearly Breakdown for Multi-Year Data */}
+              {historicalData.years_analyzed > 1 && historicalData.yearly_breakdown && (
+                <div className="mt-6">
+                  <h4 className="font-semibold text-gray-800 mb-3">Year-by-Year Breakdown</h4>
+                  <div className="space-y-4">
+                    {historicalData.yearly_breakdown.map((yearData) => (
+                      <div key={yearData.year} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-semibold text-blue-800 text-lg">{yearData.year}</h5>
+                          <div className="text-sm text-blue-600">
+                            Avg Temp: {yearData.avg_temperature}°C
+                          </div>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-4 gap-4 mb-3">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-blue-800">
+                              {yearData.annual_rainfall}mm
+                            </div>
+                            <div className="text-xs text-blue-600">Annual Rainfall</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-green-800">
+                              {yearData.wettest_month}
+                            </div>
+                            <div className="text-xs text-green-600">Wettest Month</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold text-red-800">
+                              {yearData.driest_month}
+                            </div>
+                            <div className="text-xs text-red-600">Driest Month</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm text-gray-700">
+                              <div>Wet Season: {yearData.monthly_summary.wet_season_total.toFixed(0)}mm</div>
+                              <div>Dry Season: {yearData.monthly_summary.dry_season_total.toFixed(0)}mm</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
@@ -450,18 +523,18 @@ const Weather: React.FC = () => {
                 <div key={index} className="bg-white p-4 rounded-lg border border-yellow-200">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-yellow-800 capitalize">
-                      {crop.crop.replace('_', ' ')}
+                      {crop.crop_data?.name || crop.crop || 'Unknown Crop'}
                     </h4>
                     <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                      {crop.score}% match
+                      {crop.score || crop.total_score || 0}% match
                     </span>
                   </div>
                   
                   <div className="space-y-1 text-sm text-gray-700">
-                    <p><strong>Varieties:</strong> {crop.varieties.join(', ')}</p>
-                    <p><strong>Planting Time:</strong> {crop.planting_time}</p>
-                    <p><strong>Yield Potential:</strong> {crop.yield_potential}</p>
-                    <p><strong>Description:</strong> {crop.description}</p>
+                    <p><strong>Category:</strong> {crop.crop_data?.category || 'Not specified'}</p>
+                    <p><strong>Description:</strong> {crop.crop_data?.description || 'No description available'}</p>
+                    <p><strong>Suitability:</strong> {crop.suitability_level || 'Unknown'}</p>
+                    <p><strong>Sources:</strong> {crop.sources?.length || 0} guide(s)</p>
                   </div>
                 </div>
               ))}

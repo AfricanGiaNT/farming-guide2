@@ -897,25 +897,26 @@ class VarietiesHandler:
             logger.info(f"Variety names found in context: {found_in_context}")
             
             # Create focused prompt for variety name extraction
-            prompt = f"""Extract ALL variety names from this text about {crop_name}:
+            prompt = f"""Extract ONLY {crop_name} variety names from this agricultural text. 
 
+IMPORTANT: Only extract varieties that are specifically mentioned as {crop_name} varieties. Do NOT extract varieties from other crops like groundnuts, beans, etc.
+
+Text to analyze:
 {context_text}
 
-Look for variety names like: CG 7, CG 8, CG 9, CG 10, CG 11, Chalimbana 2005, Nsinjiro, CG 12, CG 13, CG 14, Chitala, Kakoma, Baka
+For {crop_name}, look for variety names that are explicitly mentioned as {crop_name} varieties. Common {crop_name} variety patterns include:
+- Hybrid varieties (e.g., SC627, DK8053, MH30)
+- Open pollinated varieties (e.g., local varieties)
+- Any variety names specifically associated with {crop_name}
 
-Return JSON with ALL variety names found:
+Return JSON with ONLY {crop_name} varieties found:
 {{
   "varieties": [
-    {{"name": "CG 7", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
-    {{"name": "CG 8", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
-    {{"name": "CG 9", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
-    {{"name": "Chalimbana 2005", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
-    {{"name": "Nsinjiro", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}},
-    {{"name": "Kakoma", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}}
+    {{"name": "Variety Name", "planting_time": "Not specified", "yield": "Not specified", "weather": "Not specified", "soil": "Not specified", "areas": "Not specified"}}
   ]
 }}
 
-Extract ALL variety names mentioned in the text. Do not limit to just 2 varieties.
+If no {crop_name} varieties are found, return empty varieties array.
 """
 
             # Call OpenAI with timeout

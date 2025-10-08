@@ -15,6 +15,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from scripts.database.schema_manager import ensure_varieties_schema
+
 def create_varieties_table(db_path="data/agricultural_documents.db"):
     """Create the varieties table with proper schema and indexes."""
     
@@ -44,7 +46,7 @@ def create_varieties_table(db_path="data/agricultural_documents.db"):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             crop_name TEXT NOT NULL,
             variety_name TEXT NOT NULL,
-            variety_type TEXT, -- Virginia, Spanish, etc.
+            variety_type TEXT,
             yield_potential TEXT,
             maturity_days INTEGER,
             weather_requirements TEXT,
@@ -53,6 +55,9 @@ def create_varieties_table(db_path="data/agricultural_documents.db"):
             disease_resistance TEXT,
             planting_time TEXT,
             source_document TEXT,
+            confidence_score INTEGER DEFAULT 0,
+            validation_status TEXT DEFAULT 'pending',
+            extraction_session_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -66,7 +71,9 @@ def create_varieties_table(db_path="data/agricultural_documents.db"):
             "CREATE INDEX idx_variety_type ON varieties(variety_type);",
             "CREATE INDEX idx_maturity_days ON varieties(maturity_days);",
             "CREATE INDEX idx_crop_name ON varieties(crop_name);",
-            "CREATE INDEX idx_created_at ON varieties(created_at);"
+            "CREATE INDEX idx_created_at ON varieties(created_at);",
+            "CREATE INDEX idx_varieties_validation_status ON varieties(validation_status);",
+            "CREATE INDEX idx_varieties_session ON varieties(extraction_session_id);"
         ]
         
         for index_sql in indexes:
@@ -80,7 +87,8 @@ def create_varieties_table(db_path="data/agricultural_documents.db"):
         expected_columns = [
             "id", "crop_name", "variety_name", "variety_type", "yield_potential",
             "maturity_days", "weather_requirements", "soil_requirements",
-            "growing_areas", "disease_resistance", "planting_time", "source_document", "created_at"
+            "growing_areas", "disease_resistance", "planting_time", "source_document",
+            "confidence_score", "validation_status", "extraction_session_id", "created_at"
         ]
         
         print(f"✅ Table schema verified. Columns: {columns}")
@@ -90,6 +98,9 @@ def create_varieties_table(db_path="data/agricultural_documents.db"):
         indexes = [row[0] for row in cursor.fetchall()]
         print(f"✅ Indexes created: {indexes}")
         
+        # Ensure auxiliary tables and indexes required by validation workflow exist
+        ensure_varieties_schema(db_path)
+
         conn.commit()
         print("✅ Database changes committed successfully")
         
@@ -120,7 +131,8 @@ def verify_table_creation(db_path="data/agricultural_documents.db"):
         expected_columns = [
             "id", "crop_name", "variety_name", "variety_type", "yield_potential",
             "maturity_days", "weather_requirements", "soil_requirements",
-            "growing_areas", "disease_resistance", "planting_time", "source_document", "created_at"
+            "growing_areas", "disease_resistance", "planting_time", "source_document",
+            "confidence_score", "validation_status", "extraction_session_id", "created_at"
         ]
         
         for col in expected_columns:
@@ -129,7 +141,15 @@ def verify_table_creation(db_path="data/agricultural_documents.db"):
         # Test indexes exist
         cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='varieties'")
         indexes = [row[0] for row in cursor.fetchall()]
-        expected_indexes = ["idx_crop_variety", "idx_variety_type", "idx_maturity_days", "idx_crop_name", "idx_created_at"]
+        expected_indexes = [
+            "idx_crop_variety",
+            "idx_variety_type",
+            "idx_maturity_days",
+            "idx_crop_name",
+            "idx_created_at",
+            "idx_varieties_validation_status",
+            "idx_varieties_session"
+        ]
         
         for idx in expected_indexes:
             assert idx in indexes, f"Missing index: {idx}"

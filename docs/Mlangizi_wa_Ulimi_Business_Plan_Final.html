@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Solo Founder" />
+  <meta name="keywords" content="Agriculture, AI, Malawi, Weather, Farmers, Partnerships" />
+  <title>Mlangizi wa Ulimi Business Plan</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="business_plan_theme.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Mlangizi wa Ulimi Business Plan</h1>
+<p class="author">Solo Founder</p>
+<p class="date">October 2025</p>
+</header>
+<nav id="TOC" role="doc-toc">
+
+</nav>
+<h1 id="cover">Cover</h1>
+<div class="cover-title">
+Mlangizi wa Ulimi
+</div>
+<div class="cover-subtitle">
+AI‑Powered Farming Guide for Malawi
+</div>
+<p><strong>Tagline:</strong> “Your AI‑Powered Farming Partner for
+Eastern Africa”</p>
+<p><strong>Funding Request:</strong> MWK 7,200,000 ($4,000)</p>
+<p><strong>Contact:</strong> trevorchimtengo2@gmail.com • +2650990845264
+• Lilongwe, Malawi</p>
+<h1 id="executive-summary">Executive Summary</h1>
+<h2 id="opportunity">Opportunity</h2>
+<ul>
+<li>20–30% of maize production is lost annually due to storage,
+handling, and pests.</li>
+<li>70% of reported crop damage is attributed to climate
+variability.</li>
+<li>Farmers lack localized, timely, and actionable guidance for weather,
+varieties, and timing.</li>
+</ul>
+<h2 id="solution">Solution</h2>
+<p>Mlangizi wa Ulimi is a free, web‑based platform that combines AI +
+real‑time weather with a Malawi‑specific knowledge base to deliver
+practical, localized farming guidance.</p>
+<h2 id="market-potential">Market Potential</h2>
+<ul>
+<li>Target: 750 users by Year 2; 1,500 by Year 3.</li>
+<li>Model: Traffic‑based B2B partnerships (seed companies, cooperatives,
+inputs) – farmers pay nothing.</li>
+</ul>
+<h2 id="funding-impact-requested-mwk-7200000-4000">Funding Impact
+(requested MWK 7,200,000 / $4,000)</h2>
+<ul>
+<li>Complete infrastructure, optimize APIs, and harden the
+platform.</li>
+<li>Execute initial marketing setup and partnership acquisition.</li>
+<li>Achieve break‑even by Month 12 (first partnership).</li>
+</ul>
+<h2 id="headline-financials-consistent-and-finalized">Headline
+Financials (consistent and finalized)</h2>
+<ul>
+<li>Year 1 revenue: MWK 315,000 (Q4 start, 300 users, 1
+partnership).</li>
+<li>Year 2 revenue: MWK 11,677,500 (scaling to 3 partnerships and 750
+users by Q4).</li>
+<li>Year 2 profit: MWK 8,977,500 (76.9% margin), given annual costs ≈
+MWK 2,700,000.</li>
+<li>Break‑even: Month 12 (with 1 partnership at 300+ users).</li>
+</ul>
+<h1 id="market-analysis">1. Market Analysis</h1>
+<h2 id="size-segments">1.1 Size &amp; Segments</h2>
+<ul>
+<li>Malawi population ~20.4M; ~3.1M smallholder farmers.</li>
+<li>Initial target: 750+ users by Year 2 (~0.024% of smallholder
+farmers).</li>
+<li>Primary users: smallholder farmers with smartphones; secondary:
+extension workers; tertiary: cooperatives.</li>
+</ul>
+<h2 id="competitive-landscape-malawiregion">1.2 Competitive Landscape
+(Malawi/Region)</h2>
+<ul>
+<li>Ulangizi (WhatsApp chatbot), PlantVillage (disease focus), SeedCo
+App (static info), WeFarm (SMS). Most lack combined AI + weather +
+Malawi‑specific variety matching via a free web experience.</li>
+</ul>
+<h2 id="trends-constraints">1.3 Trends &amp; Constraints</h2>
+<ul>
+<li>Growing smartphone adoption; climate variability; strong interest in
+digital ag.</li>
+<li>Constraints: intermittent internet, limited digital literacy;
+addressed through mobile‑first UI and concise outputs.</li>
+</ul>
+<h1 id="product-technology">2. Product &amp; Technology</h1>
+<h2 id="core-features">2.1 Core Features</h2>
+<ul>
+<li>Weather‑integrated recommendations (current + forecast +
+historical).</li>
+<li>AI‑powered crop and variety guidance (Malawi‑specific, cached for
+cost control).</li>
+<li>Knowledge base search (FAISS + embeddings) from local agronomic
+sources.</li>
+<li>Mobile‑first web app; no installation needed; PWA‑ready.</li>
+</ul>
+<h2 id="architecture">2.2 Architecture</h2>
+<ul>
+<li>Frontend: React 18 + TypeScript, Tailwind, Chart.js.</li>
+<li>Backend: Python (Flask), REST APIs.</li>
+<li>Data: PostgreSQL (prod), SQLite (dev), FAISS vectors for semantic
+search.</li>
+<li>Integrations: OpenWeather, OpenAI, Google (location).</li>
+<li>Cost controls: response caching; 6‑hour variety cache; local vector
+search.</li>
+</ul>
+<h2 id="differentiators-practical-not-hype">2.3 Differentiators
+(practical, not hype)</h2>
+<ul>
+<li>Free for farmers; Malawi‑specific guidance; AI + weather in one
+place; web‑first.</li>
+</ul>
+<h1 id="business-model">3. Business Model</h1>
+<h2 id="trafficbased-partnership-fees-b2b">3.1 Traffic‑Based Partnership
+Fees (B2B)</h2>
+<ul>
+<li>Seed Companies: MWK 180,000 base + MWK 18,000 per 100 active
+users.</li>
+<li>Cooperatives: MWK 90,000 base + MWK 9,000 per 100 active users.</li>
+<li>Input Suppliers: MWK 112,500 base + MWK 11,250 per 100 active
+users.</li>
+</ul>
+<p>Farmers pay MWK 0. Partners pay to reach engaged traffic via
+contextual placements.</p>
+<h2 id="gotomarket-free-channels-first">3.2 Go‑to‑Market (free channels
+first)</h2>
+<ul>
+<li>Facebook and WhatsApp groups; extension‑worker advocacy; cooperative
+partnerships.</li>
+<li>One‑time setup budget for assets/tools; ongoing activities rely on
+free channels.</li>
+</ul>
+<h1 id="financials-final-consistent">4. Financials (Final,
+consistent)</h1>
+<h2 id="user-growth-targets">4.1 User Growth Targets</h2>
+<ul>
+<li>Year 1 Q4: 300 users (first partnership).</li>
+<li>Year 2 Q4: 750 users (3 partnerships).</li>
+<li>Year 3 Q4: 1,500 users (5 partnerships).</li>
+</ul>
+<h2 id="revenue-projections-by-quarter-year-2">4.2 Revenue Projections
+(by quarter, Year 2)</h2>
+<ul>
+<li>Q1: 1 partnership, 400 users → MWK 1,080,000</li>
+<li>Q2: 2 partnerships, 550 users → MWK 2,835,000</li>
+<li>Q3: 2 partnerships, 650 users → MWK 3,510,000</li>
+<li>Q4: 3 partnerships, 750 users → MWK 4,252,500</li>
+<li>Year 2 Total: MWK 11,677,500</li>
+</ul>
+<h2 id="cost-structure">4.3 Cost Structure</h2>
+<ul>
+<li>Fixed infrastructure + APIs: ~MWK 2,400,000/year.</li>
+<li>Ongoing marketing: MWK 0/month (free channels only).</li>
+<li>Legal (Y1 one‑time): MWK 300,000.</li>
+</ul>
+<h2 id="pl-snapshot">4.4 P&amp;L Snapshot</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;">Year 1</th>
+<th style="text-align: right;">Year 2</th>
+<th style="text-align: right;">Year 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Users (Q4)</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">1,500</td>
+</tr>
+<tr>
+<td>Partnerships (Q4)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td>Revenue</td>
+<td style="text-align: right;">315,000</td>
+<td style="text-align: right;">11,677,500</td>
+<td style="text-align: right;">22,680,000</td>
+</tr>
+<tr>
+<td>Costs</td>
+<td style="text-align: right;">2,700,000</td>
+<td style="text-align: right;">2,700,000</td>
+<td style="text-align: right;">3,000,000</td>
+</tr>
+<tr>
+<td>Net Profit</td>
+<td style="text-align: right;">-2,385,000</td>
+<td style="text-align: right;">8,977,500</td>
+<td style="text-align: right;">19,680,000</td>
+</tr>
+<tr>
+<td>Profit Margin</td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: right;">76.9%</td>
+<td style="text-align: right;">86.8%</td>
+</tr>
+</tbody>
+</table>
+<p>Notes: Year 1 reflects Q4 start; Year 2 uses quarterly ramp; Year 3
+scales users/partners.</p>
+<h2 id="breakeven-sensitivity">4.5 Break‑Even &amp; Sensitivity</h2>
+<ul>
+<li>Break‑even: Month 12 with 1 partnership (~300+ users).</li>
+<li>Ultra‑Conservative (Y2): 400 users, 1 partnership → Revenue
+3,024,000; Profit 324,000; BE achieved.</li>
+<li>Conservative (Y2): 750 users, 2 partnerships → Revenue 5,670,000;
+Profit 2,970,000.</li>
+</ul>
+<h1 id="implementation-plan-solofriendly">5. Implementation Plan
+(Solo‑friendly)</h1>
+<h2 id="phase-13-months-18-stabilize-launch">Phase 1–3 (Months 1–8):
+Stabilize &amp; Launch</h2>
+<ul>
+<li>Harden API integrations, vector search, and caching; mobile UX
+polish.</li>
+<li>Soft launch via free channels; gather farmer feedback; iterate.</li>
+</ul>
+<h2 id="phase-4-months-912-partnership-breakeven">Phase 4 (Months 9–12):
+Partnership &amp; Break‑Even</h2>
+<ul>
+<li>Scale to 300+ users; secure first seed‑company partnership; reach
+break‑even.</li>
+</ul>
+<h2 id="phase-5-months-1318-growth-optimization">Phase 5 (Months 13–18):
+Growth &amp; Optimization</h2>
+<ul>
+<li>Add second partnership; improve recommendation quality and data
+ergonomics.</li>
+</ul>
+<h2 id="phase-6-months-1924-sustainability-planning">Phase 6 (Months
+19–24): Sustainability &amp; Planning</h2>
+<ul>
+<li>Reach ~750 users; expand to 3 partnerships; prepare for Year‑3
+scale.</li>
+</ul>
+<h1 id="risks-mitigations">6. Risks &amp; Mitigations</h1>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Intermittent internet</td>
+<td>High</td>
+<td>Caching, concise payloads, PWA patterns</td>
+</tr>
+<tr>
+<td>Solo‑founder load</td>
+<td>High</td>
+<td>Focus on core scope; automate; defer non‑essential features</td>
+</tr>
+<tr>
+<td>API cost drift</td>
+<td>Medium</td>
+<td>Aggressive caching; prompt/token discipline; usage monitoring</td>
+</tr>
+<tr>
+<td>Competition</td>
+<td>Medium</td>
+<td>Local focus; partnerships; UX speed; credible results</td>
+</tr>
+<tr>
+<td>Regulatory changes</td>
+<td>Medium</td>
+<td>Minimal PII; transparent data handling; legal updates</td>
+</tr>
+</tbody>
+</table>
+<h1 id="partnerships">7. Partnerships</h1>
+<h2 id="targets-pricing-summary">Targets &amp; Pricing (summary)</h2>
+<ul>
+<li>Seed companies: MWK 180,000 base + MWK 18,000 per 100 users.</li>
+<li>Cooperatives: MWK 90,000 base + MWK 9,000 per 100 users.</li>
+<li>Inputs: MWK 112,500 base + MWK 11,250 per 100 users.</li>
+</ul>
+<h2 id="roadmap-1824-months">Roadmap (18–24 months)</h2>
+<ul>
+<li>Month 12: 1 seed company active (BE achieved).</li>
+<li>Month 18: 2 partnerships active.</li>
+<li>Month 24: 3 partnerships active (seed + coop + inputs).</li>
+</ul>
+<h1 id="technology-differentiation-realistic">8. Technology
+Differentiation (Realistic)</h1>
+<ul>
+<li>AI where it counts (retrieval + summarization), not hype.</li>
+<li>Weather‑aware guidance embedded into flows.</li>
+<li>Local knowledge base (Malawi‑specific) with semantic search.</li>
+<li>Free web access; mobile‑first; zero‑install; optimized
+responses.</li>
+</ul>
+<h1 id="marketing-approach-clarified">9. Marketing Approach
+(Clarified)</h1>
+<h2 id="initial-setup-onetime-funded">Initial Setup (one‑time,
+funded)</h2>
+<ul>
+<li>MWK 1,200,000 for content assets, group tools, partnership
+collateral, and community seeding.</li>
+</ul>
+<h2 id="ongoing-operations-monthtomonth">Ongoing Operations
+(month‑to‑month)</h2>
+<ul>
+<li>MWK 0 using free Facebook/WhatsApp channels, referrals, and
+extension‑worker advocacy.</li>
+</ul>
+<h1 id="social-impact">10. Social Impact</h1>
+<ul>
+<li>750+ farmers supported by Year 2; 1,500+ by Year 3.</li>
+<li>Potential 5–10% yield improvement for engaged users.</li>
+<li>Economic impact via improved timing/variety decisions and reduced
+losses.</li>
+</ul>
+<h1 id="conclusion">11. Conclusion</h1>
+<p>Mlangizi wa Ulimi is a pragmatic, Malawi‑focused, AI + weather
+farming guide. The model is free for farmers and funded by traffic‑based
+partnerships. With a modest setup budget and disciplined operations, the
+plan reaches break‑even by Month 12 and scales sustainably to 750 users
+and 3 partnerships by Year 2.</p>
+<h1 id="appendix-a-financial-tables-detail">Appendix A – Financial
+Tables (Detail)</h1>
+<h2 id="a.1-year-2-quarterly-detail-revenue">A.1 Year 2 Quarterly Detail
+(Revenue)</h2>
+<table>
+<thead>
+<tr>
+<th>Quarter</th>
+<th style="text-align: right;">Partnerships</th>
+<th style="text-align: right;">Users</th>
+<th style="text-align: right;">Revenue (MWK)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">400</td>
+<td style="text-align: right;">1,080,000</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">550</td>
+<td style="text-align: right;">2,835,000</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">650</td>
+<td style="text-align: right;">3,510,000</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">4,252,500</td>
+</tr>
+<tr>
+<td>Total</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">11,677,500</td>
+</tr>
+</tbody>
+</table>
+<h2 id="a.2-yearly-summary">A.2 Yearly Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th style="text-align: right;">Users (Q4)</th>
+<th style="text-align: right;">Partnerships (Q4)</th>
+<th style="text-align: right;">Revenue</th>
+<th style="text-align: right;">Costs</th>
+<th style="text-align: right;">Net Profit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">315,000</td>
+<td style="text-align: right;">2,700,000</td>
+<td style="text-align: right;">-2,385,000</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align: right;">750</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">11,677,500</td>
+<td style="text-align: right;">2,700,000</td>
+<td style="text-align: right;">8,977,500</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align: right;">1,500</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">22,680,000</td>
+<td style="text-align: right;">3,000,000</td>
+<td style="text-align: right;">19,680,000</td>
+</tr>
+</tbody>
+</table>
+<h1 id="appendix-b-references-selected">Appendix B – References
+(Selected)</h1>
+<ul>
+<li>FAISS: Efficient Similarity Search (Facebook AI Research).</li>
+<li>OpenAI Embeddings &amp; GPT API documentation.</li>
+<li>Malawi agriculture and climate articles (IFPRI, World Bank,
+peer‑reviewed).</li>
+</ul>
+</body>
+</html>
