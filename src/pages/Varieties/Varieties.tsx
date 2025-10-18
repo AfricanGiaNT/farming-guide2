@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import {
   Search as SearchIcon,
-  Eco as VarietyIcon,
+  Agriculture as VarietyIcon,
   LocationOn as LocationIcon,
   Compare as CompareIcon,
 } from '@mui/icons-material'

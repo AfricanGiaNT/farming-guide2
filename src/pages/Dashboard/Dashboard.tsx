@@ -14,7 +14,7 @@ import {
 import {
   WbSunny as WeatherIcon,
   Agriculture as CropIcon,
-  Eco as VarietyIcon,
+  Agriculture as VarietyIcon,
   TrendingUp as TrendIcon,
   LocationOn as LocationIcon,
 } from '@mui/icons-material'

@@ -38,23 +38,32 @@ api.interceptors.response.use(
 // Weather API endpoints
 export const weatherAPI = {
   getCurrentWeather: async (lat: number, lon: number) => {
-    const response = await api.get(`/weather/${lat}/${lon}`)
+    const response = await api.get(`/weather/${lat},${lon}`)
     return response.data
   },
 
   getWeatherForecast: async (lat: number, lon: number) => {
-    const response = await api.get(`/weather/${lat}/${lon}/forecast`)
+    const response = await api.get(`/weather/${lat},${lon}`)
     return response.data
   },
 
   getRainfallData: async (lat: number, lon: number) => {
-    const response = await api.get(`/rainfall/${lat}/${lon}`)
+    const response = await api.get(`/rainfall/${lat},${lon}`)
     return response.data
   },
 
   getHistoricalWeather: async (lat: number, lon: number, years: number = 5) => {
-    const response = await api.get(`/weather/${lat}/${lon}/historical?years=${years}`)
-    return response.data
+    console.log('🌐 API - Fetching historical weather for:', { lat, lon, years })
+    try {
+      const response = await api.get(`/weather/${lat},${lon}/historical?years=${years}`)
+      console.log('🌐 API - Historical weather response:', response.data)
+      console.log('🌐 API - Response keys:', Object.keys(response.data))
+      console.log('🌐 API - Monthly averages:', response.data.monthly_averages)
+      return response.data
+    } catch (error) {
+      console.error('🌐 API - Historical weather error:', error)
+      throw error
+    }
   },
 }
 
@@ -91,15 +100,16 @@ export const cropAPI = {
     return response.data
   },
 
-  getPlantingCalendar: async (cropName: string, lat: number, lon: number) => {
-    const response = await api.get(`/planting-calendar/${cropName}/${lat}/${lon}`)
-    return response.data
-  },
+  // Note: These endpoints don't exist in the backend yet
+  // getPlantingCalendar: async (cropName: string, lat: number, lon: number) => {
+  //   const response = await api.get(`/planting-calendar/${cropName}/${lat}/${lon}`)
+  //   return response.data
+  // },
 
-  getYieldPrediction: async (cropName: string, lat: number, lon: number) => {
-    const response = await api.get(`/yield-prediction/${cropName}/${lat}/${lon}`)
-    return response.data
-  },
+  // getYieldPrediction: async (cropName: string, lat: number, lon: number) => {
+  //   const response = await api.get(`/yield-prediction/${cropName}/${lat}/${lon}`)
+  //   return response.data
+  // },
 }
 
 // Knowledge Base API endpoints

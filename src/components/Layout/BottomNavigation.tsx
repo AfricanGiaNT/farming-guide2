@@ -9,7 +9,7 @@ import {
   Home as HomeIcon,
   WbSunny as WeatherIcon,
   Agriculture as CropIcon,
-  Eco as VarietyIcon,
+  Agriculture as VarietyIcon,
   MenuBook as KnowledgeIcon,
 } from '@mui/icons-material'
 

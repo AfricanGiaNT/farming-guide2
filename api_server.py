@@ -807,17 +807,14 @@ def get_historical_weather(location):
         # Parse location (could be coordinates or name)
         lat, lon = parse_location(location)
         
-        # Check if we have a valid API key (not placeholder)
-        api_key = os.environ.get("OPENWEATHERMAP_API_KEY", "")
-        has_valid_api_key = api_key and api_key != "your_actual_openweathermap_api_key_here" and len(api_key) > 20
-        
-        if weather_api and has_valid_api_key:
-            # Try to get real historical data
-            historical_data = get_real_historical_weather(lat, lon, years)
-            if historical_data:
-                return jsonify(historical_data)
+        # Always try to get real historical data first (uses free Open-Meteo API)
+        print("Attempting to fetch real historical weather data...")
+        historical_data = get_real_historical_weather(lat, lon, years)
+        if historical_data:
+            print("✅ Using REAL historical weather data")
+            return jsonify(historical_data)
         else:
-            print(f"Using mock data: API key {'not configured' if not has_valid_api_key else 'invalid'}")
+            print("⚠️ Real data not available, falling back to mock data")
         
         # Fallback to mock data if real API fails (with chronological date calculation)
         import random
@@ -1151,8 +1148,10 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
         year_data = yearly_data[year]
         
         # Calculate annual stats
-        annual_rainfall = sum(monthly_data[month]['rainfall']) if monthly_data[month]['rainfall'] else 0
-        annual_temp = sum(monthly_data[month]['temperature']) / len(monthly_data[month]['temperature']) if monthly_data[month]['temperature'] else 25
+        all_rainfall = [r for month in months for r in monthly_data[month]['rainfall']]
+        all_temps = [t for month in months for t in monthly_data[month]['temperature']]
+        annual_rainfall = sum(all_rainfall) if all_rainfall else 0
+        annual_temp = sum(all_temps) / len(all_temps) if all_temps else 25
         
         # Find wettest and driest months
         month_rainfall = {month: sum(monthly_data[month]['rainfall']) / len(monthly_data[month]['rainfall']) 
@@ -1171,8 +1170,8 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
             'wettest_month': wettest,
             'driest_month': driest,
             'monthly_summary': {
-                'wet_season_total': round(sum(monthly_data[month]['rainfall']) for month in wet_season_months if monthly_data[month]['rainfall']),
-                'dry_season_total': round(sum(monthly_data[month]['rainfall']) for month in months if month not in wet_season_months and monthly_data[month]['rainfall'])
+                'wet_season_total': round(sum(sum(monthly_data[month]['rainfall']) for month in wet_season_months if monthly_data[month]['rainfall'])),
+                'dry_season_total': round(sum(sum(monthly_data[month]['rainfall']) for month in months if month not in wet_season_months and monthly_data[month]['rainfall']))
             }
         })
     

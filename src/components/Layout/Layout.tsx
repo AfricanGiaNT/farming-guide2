@@ -21,7 +21,7 @@ import {
   Home as HomeIcon,
   WbSunny as WeatherIcon,
   Agriculture as CropIcon,
-  Eco as VarietyIcon,
+  Agriculture as VarietyIcon,
   MenuBook as KnowledgeIcon,
   Dashboard as FarmIcon,
   Analytics as AnalyticsIcon,
