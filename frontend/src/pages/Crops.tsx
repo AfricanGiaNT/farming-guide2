@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import CropRecommendationCard from '../components/crops/CropRecommendationCard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { MapPin, Calendar, Droplets, Search, Loader2 } from 'lucide-react';
+import { MapPin, Calendar, Droplets, Search, Loader2, ArrowLeft, Cloud } from 'lucide-react';
 import { mockCropRecommendations, malawianDistricts } from '../utils/mockData';
 import { Season } from '../types';
 import { apiService } from '../services/api';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Crops: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Lilongwe');
   const [selectedSeason, setSelectedSeason] = useState<Season>('rainy');
   
@@ -20,6 +23,35 @@ const Crops: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<string>('');
+  
+  // Weather context from navigation
+  const [weatherContext, setWeatherContext] = useState<any>(null);
+
+  // Handle weather context from navigation
+  useEffect(() => {
+    if (location.state?.weatherContext) {
+      const context = location.state.weatherContext;
+      setWeatherContext(context);
+      
+      // Pre-populate location if available
+      if (context.location) {
+        setCurrentLocation(context.location);
+        if (context.location.includes(',')) {
+          // It's coordinates
+          const [lat, lon] = context.location.split(',');
+          setCoordinates({ lat: lat.trim(), lon: lon.trim() });
+        } else {
+          // It's a location name
+          setLocationInput(context.location);
+        }
+      }
+      
+      // Pre-populate crop data if available
+      if (context.cropRecommendations) {
+        setCropData(context.cropRecommendations);
+      }
+    }
+  }, [location.state]);
 
   const seasons: { value: Season; label: string; description: string }[] = [
     { value: 'rainy', label: 'Rainy Season', description: 'November - April' },
@@ -123,6 +155,59 @@ const Crops: React.FC = () => {
           Get personalized crop recommendations based on your location and season
         </p>
       </div>
+
+      {/* Weather Context Display */}
+      {weatherContext && (
+        <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-blue-800 flex items-center gap-2">
+              <Cloud size={20} />
+              Weather-Based Analysis
+              <button
+                onClick={() => navigate('/weather')}
+                className="ml-auto flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+              >
+                <ArrowLeft size={14} />
+                Back to Weather
+              </button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <h4 className="font-semibold text-blue-800 mb-2">Location</h4>
+                <p className="text-sm text-blue-700">{weatherContext.location}</p>
+              </div>
+              {weatherContext.weatherData && (
+                <div>
+                  <h4 className="font-semibold text-blue-800 mb-2">Current Weather</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Temperature: {weatherContext.weatherData.current.temperature}°C</p>
+                    <p>Rainfall: {weatherContext.weatherData.current.rainfall}mm</p>
+                    <p>Humidity: {weatherContext.weatherData.current.humidity}%</p>
+                  </div>
+                </div>
+              )}
+              {weatherContext.historicalData && (
+                <div>
+                  <h4 className="font-semibold text-blue-800 mb-2">Historical Data</h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    <p>Annual Rainfall: {weatherContext.historicalData.climate_summary.total_annual_rainfall.toFixed(0)}mm</p>
+                    <p>Wettest Month: {weatherContext.historicalData.climate_summary.wettest_month}</p>
+                    <p>Drought Risk: {weatherContext.historicalData.climate_summary.drought_risk}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> These recommendations are enhanced with weather analysis from the Weather page. 
+                The data above was used to generate more accurate crop suggestions for your specific location and conditions.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search Form */}
       <Card className="bg-green-50 border-green-200">

@@ -38,6 +38,28 @@ export interface WeatherData {
   mock_data?: boolean;
 }
 
+export interface GoogleMapsExtractionResponse {
+  success: boolean;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+    zoom?: number;
+  };
+  metadata: {
+    format_detected: string;
+    confidence: number;
+    extraction_method: string;
+    request_id: string;
+  };
+  timestamp: string;
+}
+
+export interface GoogleMapsExtractionError {
+  error: string;
+  details: string;
+  request_id: string;
+}
+
 export interface CropRecommendation {
   crop_data?: {
     name: string;
@@ -280,6 +302,19 @@ class ApiService {
     return this.request(`/weather/${encodeURIComponent(location)}/historical?years=${years}`);
   }
 
+  // Enhanced Historical Weather API
+  async getEnhancedHistoricalWeather(location: string, years: number = 5): Promise<HistoricalWeatherData> {
+    return this.request(`/weather/${encodeURIComponent(location)}/enhanced?years=${years}`);
+  }
+
+  // Google Maps coordinate extraction API
+  async extractCoordinatesFromGoogleMaps(googleMapsUrl: string): Promise<GoogleMapsExtractionResponse> {
+    return this.request('/weather/extract-location', {
+      method: 'POST',
+      body: JSON.stringify({ google_maps_url: googleMapsUrl }),
+    });
+  }
+
   // Crops API
   async getCrops(location: string = 'Lilongwe', season: string = 'current'): Promise<CropResponse> {
     const params = new URLSearchParams({
@@ -287,6 +322,24 @@ class ApiService {
       season,
     });
     return this.request(`/crops?${params}`);
+  }
+
+  // Enhanced Smart Crops API
+  async getSmartCrops(
+    location: string = 'Lilongwe', 
+    season: string = 'rain',
+    riskTolerance: string = 'balanced',
+    inputBudget: string = 'medium',
+    maxCrops: number = 6
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      location,
+      season,
+      risk_tolerance: riskTolerance,
+      input_budget: inputBudget,
+      max_crops: maxCrops.toString(),
+    });
+    return this.request(`/smart_crops?${params}`);
   }
 
   // Varieties API
