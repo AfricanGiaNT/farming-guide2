@@ -26,6 +26,7 @@ import {
   Dashboard as FarmIcon,
   Analytics as AnalyticsIcon,
   Notifications as NotificationIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import BottomNavigation from './BottomNavigation'
@@ -42,6 +43,7 @@ const navigationItems = [
   { path: '/knowledge', label: 'Knowledge', icon: KnowledgeIcon },
   { path: '/farm', label: 'My Farm', icon: FarmIcon },
   { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
+  { path: '/admin/varieties', label: 'Admin', icon: AdminIcon },
 ]
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {

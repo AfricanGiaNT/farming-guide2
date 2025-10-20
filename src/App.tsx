@@ -14,6 +14,7 @@ const Varieties = React.lazy(() => import('./pages/Varieties/Varieties'))
 const KnowledgeBase = React.lazy(() => import('./pages/KnowledgeBase/KnowledgeBase'))
 const MyFarm = React.lazy(() => import('./pages/MyFarm/MyFarm'))
 const Analytics = React.lazy(() => import('./pages/Analytics/Analytics'))
+const AdminVarieties = React.lazy(() => import('./pages/Admin/AdminVarieties'))
 
 // Loading component
 const PageLoader = () => (
@@ -81,6 +82,7 @@ function App() {
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="/farm" element={<MyFarm />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/admin/varieties" element={<AdminVarieties />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

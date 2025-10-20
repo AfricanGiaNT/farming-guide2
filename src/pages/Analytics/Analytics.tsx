@@ -73,43 +73,10 @@ const Analytics: React.FC = () => {
       }
 
     } catch (err) {
-      setError('Failed to load analytics data')
+      setError('Failed to load analytics data - real data only, no fallback available')
       console.error('Analytics error:', err)
       
-      // Fallback to mock data
-      setMetrics({
-        totalUsers: 1250,
-        activeUsers: 890,
-        totalQueries: 15420,
-        avgResponseTime: 1.2,
-        topCrops: [
-          { crop: 'Maize', queries: 4520 },
-          { crop: 'Groundnuts', queries: 3210 },
-          { crop: 'Beans', queries: 2890 },
-          { crop: 'Soybeans', queries: 2100 },
-          { crop: 'Rice', queries: 1800 }
-        ],
-        topLocations: [
-          { location: 'Lilongwe', queries: 5200 },
-          { location: 'Blantyre', queries: 3800 },
-          { location: 'Mzuzu', queries: 2100 },
-          { location: 'Zomba', queries: 1800 },
-          { location: 'Kasungu', queries: 1200 }
-        ]
-      })
-
-      setWeatherData({
-        avgTemperature: 24.5,
-        avgRainfall: 850,
-        weatherTrends: [
-          { month: 'Jan', temp: 26, rainfall: 200 },
-          { month: 'Feb', temp: 25, rainfall: 180 },
-          { month: 'Mar', temp: 24, rainfall: 120 },
-          { month: 'Apr', temp: 22, rainfall: 40 },
-          { month: 'May', temp: 20, rainfall: 10 },
-          { month: 'Jun', temp: 18, rainfall: 5 }
-        ]
-      })
+      // No fallback to mock data - real data only
     } finally {
       setLoading(false)
     }

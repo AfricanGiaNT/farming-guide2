@@ -52,16 +52,36 @@ export const weatherAPI = {
     return response.data
   },
 
-  getHistoricalWeather: async (lat: number, lon: number, years: number = 5) => {
-    console.log('🌐 API - Fetching historical weather for:', { lat, lon, years })
+  getHistoricalWeather: async (lat: number, lon: number, yearsOrList: number | number[] = 5) => {
+    console.log('🌐 API - Fetching historical weather for:', { lat, lon, yearsOrList })
     try {
-      const response = await api.get(`/weather/${lat},${lon}/historical?years=${years}`)
+      let url = `/weather/${lat},${lon}/historical`
+      if (Array.isArray(yearsOrList)) {
+        const csv = yearsOrList.join(',')
+        url += `?years_list=${csv}`
+      } else {
+        url += `?years=${yearsOrList}`
+      }
+      const response = await api.get(url)
       console.log('🌐 API - Historical weather response:', response.data)
       console.log('🌐 API - Response keys:', Object.keys(response.data))
       console.log('🌐 API - Monthly averages:', response.data.monthly_averages)
       return response.data
     } catch (error) {
       console.error('🌐 API - Historical weather error:', error)
+      throw error
+    }
+  },
+
+  getAgriculturalRecommendations: async (lat: number, lon: number, years: number = 3) => {
+    console.log('🌐 API - Fetching agricultural recommendations for:', { lat, lon, years })
+    try {
+      const url = `/weather/${lat},${lon}/agricultural-recommendations?years=${years}`
+      const response = await api.get(url)
+      console.log('🌐 API - Agricultural recommendations response:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('🌐 API - Agricultural recommendations error:', error)
       throw error
     }
   },
@@ -171,6 +191,73 @@ export const analyticsAPI = {
 
   getUsageMetrics: async (period: '7d' | '30d' | '90d' = '30d') => {
     const response = await api.get(`/analytics/usage?period=${period}`)
+    return response.data
+  },
+}
+
+// Admin API endpoints
+export interface ExtractedVariety {
+  crop_name: string
+  variety_name: string
+  variety_type?: string
+  yield_potential?: string
+  maturity_days?: number
+  weather_requirements?: string
+  soil_requirements?: string
+  growing_areas?: string
+  disease_resistance?: string
+  planting_time?: string
+  source_document?: string
+  confidence_score?: number
+  validation_status?: string
+  extraction_session_id: string
+  context?: string
+}
+
+export interface VarietyExtractionStats {
+  documents_processed: number
+  varieties_extracted: number
+  crops_processed: string[]
+}
+
+export interface VarietyExtractionResult {
+  session_id: string | null
+  varieties: ExtractedVariety[]
+  stats: VarietyExtractionStats
+}
+
+export interface VarietyExtractionParams {
+  crops?: string[]
+  documents?: string[]
+  clear_existing?: boolean
+}
+
+export interface VarietyValidationPayload {
+  session_id: string
+  selected_varieties: ExtractedVariety[]
+  clear_existing?: boolean
+}
+
+export interface VarietyValidationResult {
+  session_id: string
+  varieties_saved: number
+}
+
+export interface ApiResponse<T> {
+  status: 'success' | 'error'
+  message?: string
+  data: T
+  timestamp: string
+}
+
+export const adminAPI = {
+  extractVarietiesForValidation: async (params: VarietyExtractionParams = {}): Promise<ApiResponse<VarietyExtractionResult>> => {
+    const response = await api.post('/admin/varieties/extract', params)
+    return response.data
+  },
+
+  validateSelectedVarieties: async (payload: VarietyValidationPayload): Promise<ApiResponse<VarietyValidationResult>> => {
+    const response = await api.post('/admin/varieties/validate', payload)
     return response.data
   },
 }

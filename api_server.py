@@ -41,10 +41,11 @@ def load_config():
                     if line and not line.startswith('#') and '=' in line:
                         key, value = line.split('=', 1)
                         os.environ[key.strip()] = value.strip()
-            print(f"✅ Loaded config from {config_path}")
+            # Use ASCII-friendly markers to avoid Windows console Unicode errors
+            print(f"[OK] Loaded config from {config_path}")
             loaded_any = True
         else:
-            print(f"⚠️  Config file not found: {config_path}")
+            print(f"[WARN] Config file not found: {config_path}")
     
     return loaded_any
 
@@ -73,15 +74,15 @@ def initialize_components():
     """Initialize backend components"""
     global weather_api, recommendation_engine, varieties_handler, semantic_search, sqlite_recommendation_engine, seasonal_advisor
     
-    print("🔧 Initializing backend components...")
+    print("[INIT] Initializing backend components...")
 
     try:
         ensure_varieties_schema('data/agricultural_documents.db')
-        print("✅ Varieties schema verified")
+        print("[OK] Varieties schema verified")
     except FileNotFoundError as e:
-        print(f"⚠️  Varieties schema check skipped: {e}")
+        print(f"[WARN] Varieties schema check skipped: {e}")
     except Exception as e:
-        print(f"⚠️  Varieties schema verification failed: {e}")
+        print(f"[WARN] Varieties schema verification failed: {e}")
 
     # Initialize weather API
     try:
@@ -89,12 +90,12 @@ def initialize_components():
         if api_key:
             from weather_engine.weather_api import WeatherAPI
             weather_api = WeatherAPI()
-            print(f"✅ Weather API initialized with real API key: {api_key[:8]}...")
+            print(f"[OK] Weather API initialized with real API key: {api_key[:8]}...")
         else:
-            print("⚠️  OPENWEATHERMAP_API_KEY not found in environment, using mock data")
+            print("[WARN] OPENWEATHERMAP_API_KEY not found in environment, using mock data")
             weather_api = None
     except Exception as e:
-        print(f"⚠️  Weather API initialization failed: {e}")
+        print(f"[WARN] Weather API initialization failed: {e}")
         weather_api = None
     
     # Initialize SQLite recommendation engine (same as bot)
@@ -103,31 +104,31 @@ def initialize_components():
         # Use the correct database path
         db_path = os.path.join(os.path.dirname(__file__), 'data', 'agricultural_documents.db')
         sqlite_recommendation_engine = SQLiteBasedRecommendationEngine(db_path)
-        print("✅ SQLite recommendation engine initialized")
+        print("[OK] SQLite recommendation engine initialized")
     except Exception as e:
-        print(f"⚠️  SQLite recommendation engine initialization failed: {e}")
+        print(f"[WARN] SQLite recommendation engine initialization failed: {e}")
         sqlite_recommendation_engine = None
     
     # Initialize seasonal advisor
     try:
         from crop_advisor.seasonal_advisor import SeasonalAdvisor
         seasonal_advisor = SeasonalAdvisor()
-        print("✅ Seasonal advisor initialized")
+        print("[OK] Seasonal advisor initialized")
     except Exception as e:
-        print(f"⚠️  Seasonal advisor initialization failed: {e}")
+        print(f"[WARN] Seasonal advisor initialization failed: {e}")
         seasonal_advisor = None
     
     # Initialize VarietiesHandler
     try:
         from handlers.varieties_handler import VarietiesHandler
         varieties_handler = VarietiesHandler()
-        print("✅ Varieties handler initialized")
+        print("[OK] Varieties handler initialized")
     except Exception as e:
-        print(f"⚠️  Varieties handler initialization failed: {e}")
+        print(f"[WARN] Varieties handler initialization failed: {e}")
         varieties_handler = None
     
     # For other components, keep using mock data to avoid other import issues
-    print("📝 Other components using mock data for now")
+    print("[INFO] Other components using mock data for now")
     recommendation_engine = None
     semantic_search = None
 
@@ -188,29 +189,13 @@ def get_weather(location):
     """Get weather information for a location"""
     try:
         if not weather_api:
-            # Return mock data if weather API is not available
+            # Return error if weather API is not available - no mock data
             return jsonify({
+                'error': 'Weather API is not available. Please check your API configuration.',
+                'message': 'Real weather data cannot be fetched at this time.',
                 'location': location,
-                'current': {
-                    'temperature': 28,
-                    'humidity': 65,
-                    'rainfall': 0,
-                    'description': 'Partly cloudy',
-                    'wind_speed': 12,
-                    'pressure': 1013
-                },
-                'forecast': [
-                    {'date': '2025-09-26', 'temp_high': 30, 'temp_low': 18, 'rain_chance': 20, 'description': 'Sunny'},
-                    {'date': '2025-09-27', 'temp_high': 32, 'temp_low': 20, 'rain_chance': 10, 'description': 'Clear'},
-                    {'date': '2025-09-28', 'temp_high': 29, 'temp_low': 19, 'rain_chance': 40, 'description': 'Partly cloudy'},
-                    {'date': '2025-09-29', 'temp_high': 27, 'temp_low': 17, 'rain_chance': 60, 'description': 'Light rain'},
-                    {'date': '2025-09-30', 'temp_high': 25, 'temp_low': 16, 'rain_chance': 80, 'description': 'Heavy rain'},
-                    {'date': '2025-10-01', 'temp_high': 26, 'temp_low': 17, 'rain_chance': 50, 'description': 'Showers'},
-                    {'date': '2025-10-02', 'temp_high': 28, 'temp_low': 18, 'rain_chance': 30, 'description': 'Partly cloudy'}
-                ],
-                'timestamp': datetime.now().isoformat(),
-                'mock_data': True
-            })
+                'timestamp': datetime.now().isoformat()
+            }), 503
             
         # Parse location (could be coordinates or name)
         lat, lon = parse_location(location)
@@ -248,30 +233,13 @@ def get_weather(location):
         
     except Exception as e:
         print(f"Weather API error: {e}")
-        # Fallback to mock data on error
+        # Return error instead of mock data
         return jsonify({
+            'error': f'Failed to fetch weather data: {str(e)}',
+            'message': 'Real weather data cannot be fetched at this time.',
             'location': location,
-            'current': {
-                'temperature': 28,
-                'humidity': 65,
-                'rainfall': 0,
-                'description': 'Partly cloudy (fallback)',
-                'wind_speed': 12,
-                'pressure': 1013
-            },
-            'forecast': [
-                {'date': '2025-09-26', 'temp_high': 30, 'temp_low': 18, 'rain_chance': 20, 'description': 'Sunny'},
-                {'date': '2025-09-27', 'temp_high': 32, 'temp_low': 20, 'rain_chance': 10, 'description': 'Clear'},
-                {'date': '2025-09-28', 'temp_high': 29, 'temp_low': 19, 'rain_chance': 40, 'description': 'Partly cloudy'},
-                {'date': '2025-09-29', 'temp_high': 27, 'temp_low': 17, 'rain_chance': 60, 'description': 'Light rain'},
-                {'date': '2025-09-30', 'temp_high': 25, 'temp_low': 16, 'rain_chance': 80, 'description': 'Heavy rain'},
-                {'date': '2025-10-01', 'temp_high': 26, 'temp_low': 17, 'rain_chance': 50, 'description': 'Showers'},
-                {'date': '2025-10-02', 'temp_high': 28, 'temp_low': 18, 'rain_chance': 30, 'description': 'Partly cloudy'}
-            ],
-            'timestamp': datetime.now().isoformat(),
-            'mock_data': True,
-            'error': str(e)
-        })
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 @app.route('/api/crops', methods=['GET'])
 def get_crop_recommendations():
@@ -801,128 +769,103 @@ def get_historical_weather(location):
     try:
         from datetime import timedelta
         
-        years = int(request.args.get('years', 5))
-        years = min(max(years, 1), 10)  # Ensure 1-10 year range
+        years_param = request.args.get('years')
+        years_list_param = request.args.get('years_list')  # CSV of explicit years
+
+        explicit_years = None
+        if years_list_param:
+            try:
+                explicit_years = [int(y) for y in years_list_param.split(',') if y.strip().isdigit()]
+                # Deduplicate and clamp to at most 10 entries
+                explicit_years = sorted(list({y for y in explicit_years}), reverse=True)[:10]
+            except Exception:
+                explicit_years = None
+
+        years = int(years_param or (len(explicit_years) if explicit_years else 5))
+        years = min(max(years, 1), 10)  # Ensure 1-10 range when not explicit
         
         # Parse location (could be coordinates or name)
         lat, lon = parse_location(location)
         
         # Always try to get real historical data first (uses free Open-Meteo API)
         print("Attempting to fetch real historical weather data...")
-        historical_data = get_real_historical_weather(lat, lon, years)
+        historical_data = get_real_historical_weather(lat, lon, years, explicit_years)
         if historical_data:
             print("✅ Using REAL historical weather data")
             return jsonify(historical_data)
         else:
-            print("⚠️ Real data not available, falling back to mock data")
+            print("❌ Real data not available - returning error instead of mock data")
+            return jsonify({
+                'error': 'Real historical weather data is not available for this location and time period.',
+                'message': 'Please check your internet connection and API configuration.',
+                'coordinates': {'lat': lat, 'lon': lon},
+                'years_requested': years,
+                'timestamp': datetime.now().isoformat()
+            }), 503
         
-        # Fallback to mock data if real API fails (with chronological date calculation)
-        import random
+        # NO FALLBACK TO MOCK DATA - Real data only
         
-        # Calculate date range: from current date backwards
-        current_date = datetime.now()
-        start_date = current_date - timedelta(days=365 * years)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/weather/<location>/agricultural-recommendations', methods=['GET'])
+def get_agricultural_recommendations(location):
+    """Get crop recommendations based on historical weather patterns"""
+    try:
+        from scripts.crop_advisor.seasonal_analyzer import SeasonalAnalyzer
+        from scripts.crop_advisor.crop_matcher import CropMatcher
         
-        print(f"Using fallback mock data for historical period: {start_date.strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')}")
+        years_param = request.args.get('years')
+        years_list_param = request.args.get('years_list')
         
-        monthly_data = {}
-        months = ['January', 'February', 'March', 'April', 'May', 'June',
-                 'July', 'August', 'September', 'October', 'November', 'December']
+        # Parse years parameter (same logic as historical weather)
+        explicit_years = None
+        if years_list_param:
+            try:
+                explicit_years = [int(y) for y in years_list_param.split(',') if y.strip().isdigit()]
+                explicit_years = sorted(list({y for y in explicit_years}), reverse=True)[:10]
+            except Exception:
+                explicit_years = None
         
-        # Use location and years as seed for reproducible data
-        location_seed = hash(f"{location}_{years}") % (2**32)
-        random.seed(location_seed)
+        years = int(years_param or (len(explicit_years) if explicit_years else 3))
+        years = min(max(years, 1), 10)
         
-        # Generate yearly breakdown for multi-year data
-        yearly_breakdown = []
-        if years > 1:
-            for year_offset in range(years):
-                target_year = current_date.year - year_offset
-                year_seed = hash(f"{location}_{target_year}") % (2**32)
-                random.seed(year_seed)
-                
-                year_rainfall = 0
-                temp_values = []
-                wettest_month = ''
-                driest_month = ''
-                max_rainfall = 0
-                min_rainfall = float('inf')
-                
-                for month in months:
-                    if month in ['November', 'December', 'January', 'February', 'March']:
-                        base_rainfall = random.uniform(80, 200)
-                    else:
-                        base_rainfall = random.uniform(0, 30)
-                    
-                    year_rainfall += base_rainfall
-                    temp_values.append(random.uniform(18, 30))
-                    
-                    if base_rainfall > max_rainfall:
-                        max_rainfall = base_rainfall
-                        wettest_month = month
-                    if base_rainfall < min_rainfall:
-                        min_rainfall = base_rainfall
-                        driest_month = month
-                
-                yearly_breakdown.append({
-                    'year': target_year,
-                    'annual_rainfall': round(year_rainfall, 1),
-                    'avg_temperature': round(sum(temp_values) / len(temp_values), 1),
-                    'wettest_month': wettest_month,
-                    'driest_month': driest_month,
-                    'monthly_summary': {
-                        'wet_season_total': round(sum(random.uniform(80, 200) for _ in range(5)), 1),
-                        'dry_season_total': round(sum(random.uniform(0, 30) for _ in range(7)), 1)
-                    }
-                })
+        # Parse location
+        lat, lon = parse_location(location)
         
-        # Reset seed for monthly averages
-        random.seed(location_seed)
+        # Get historical weather data first
+        print(f"Fetching historical weather for agricultural recommendations: {lat}, {lon}")
+        historical_data = get_real_historical_weather(lat, lon, years, explicit_years)
         
-        for month in months:
-            # Generate realistic rainfall data for Malawi
-            if month in ['November', 'December', 'January', 'February', 'March']:
-                # Wet season
-                base_rainfall = random.uniform(80, 200)
-            else:
-                # Dry season
-                base_rainfall = random.uniform(0, 30)
-            
-            monthly_data[month] = {
-                'average_rainfall': round(base_rainfall, 1),
-                'min_rainfall': round(base_rainfall * 0.3, 1),
-                'max_rainfall': round(base_rainfall * 1.8, 1),
-                'average_temperature': round(random.uniform(18, 30), 1),
-                'years_analyzed': years
-            }
+        if not historical_data:
+            return jsonify({
+                'error': 'Historical weather data not available',
+                'message': 'Unable to generate crop recommendations without weather data'
+            }), 503
+        
+        # Analyze weather patterns
+        analyzer = SeasonalAnalyzer()
+        seasonal_analysis = analyzer.analyze_weather_patterns(historical_data)
+        
+        # Match crops to patterns
+        matcher = CropMatcher()
+        recommendations = matcher.get_agricultural_recommendations(seasonal_analysis)
+        
+        print(f"✅ Generated agricultural recommendations for {lat}, {lon}")
+        print(f"   Wet season crops: {len(recommendations['wet_season']['suitable_crops'])}")
+        print(f"   Dry season crops: {len(recommendations['dry_season']['suitable_crops'])}")
         
         return jsonify({
-            'location': location,
-            'years_analyzed': years,
-            'period_start': start_date.strftime('%Y-%m-%d'),
-            'period_end': current_date.strftime('%Y-%m-%d'),
-            'monthly_averages': monthly_data,
-            'yearly_breakdown': yearly_breakdown if years > 1 else None,
-            'climate_summary': {
-                'total_annual_rainfall': sum(month['average_rainfall'] for month in monthly_data.values()),
-                'wettest_month': max(monthly_data.keys(), key=lambda k: monthly_data[k]['average_rainfall']),
-                'driest_month': min(monthly_data.keys(), key=lambda k: monthly_data[k]['average_rainfall']),
-                'climate_trend': f'Based on last {years} year(s) of data',
-                'drought_risk': 'moderate',
-                'analysis_period': f'{start_date.strftime("%B %Y")} to {current_date.strftime("%B %Y")}'
-            },
-            'agricultural_implications': {
-                'wet_season': 'November to March - ideal for rain-fed crops',
-                'dry_season': 'April to October - irrigation recommended',
-                'planting_window': 'November to December for most crops',
-                'harvest_period': 'March to May depending on crop variety',
-                'data_note': f'Averages based on patterns from last {years} year(s)'
-            },
-            'timestamp': datetime.now().isoformat(),
-            'mock_data': True
+            'years_analyzed': historical_data.get('years_analyzed', years),
+            'agricultural_implications': recommendations,
+            'coordinates': {'lat': lat, 'lon': lon},
+            'analysis_date': datetime.now().isoformat()
         })
         
     except Exception as e:
+        print(f"Error generating agricultural recommendations: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 def get_historical_rainfall_data(lat, lon, start_date, end_date):
@@ -934,6 +877,24 @@ def get_historical_rainfall_data(lat, lon, start_date, end_date):
     from datetime import datetime
     
     try:
+        # Simple on-disk cache to avoid repeated archive calls for same window
+        import json as _json
+        import time as _time
+        cache_path = os.path.join('data', 'weather_cache.json')
+        os.makedirs('data', exist_ok=True)
+        cache = {}
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, 'r') as f:
+                    cache = _json.load(f) or {}
+            except Exception:
+                cache = {}
+
+        cache_key = f"openmeteo:{lat:.4f},{lon:.4f}:{start_date.strftime('%Y-%m-%d')}:{end_date.strftime('%Y-%m-%d')}"
+        cached = cache.get(cache_key)
+        # TTL 24h for safety; historical ranges rarely change
+        if cached and (int(_time.time()) - int(cached.get('ts', 0)) < 24 * 3600):
+            return cached.get('daily')
         # Open-Meteo Historical Weather API (free, no API key required)
         url = "https://archive-api.open-meteo.com/v1/archive"
         
@@ -951,6 +912,13 @@ def get_historical_rainfall_data(lat, lon, start_date, end_date):
         if response.status_code == 200:
             data = response.json()
             if 'daily' in data and 'rain_sum' in data['daily']:
+                # Write to cache
+                cache[cache_key] = {'ts': int(_time.time()), 'daily': data['daily']}
+                try:
+                    with open(cache_path, 'w') as f:
+                        _json.dump(cache, f)
+                except Exception:
+                    pass
                 return data['daily']
         
         return None
@@ -1073,7 +1041,7 @@ def calculate_realistic_rainfall(month, humidity, cloud_cover, temperature, pres
     
     return hourly_rainfall
 
-def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, current_date):
+def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, current_date, allowed_years=None):
     """
     Process real rainfall data from Open-Meteo API into our standard format
     """
@@ -1084,9 +1052,11 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
              'July', 'August', 'September', 'October', 'November', 'December']
     wet_season_months = ['November', 'December', 'January', 'February', 'March']
     
-    # Group data by month and year
+    # Group data by month (across all years) and by year->month
     monthly_data = defaultdict(lambda: {'rainfall': [], 'temperature': []})
     yearly_data = {}
+    per_year_monthly_totals = defaultdict(lambda: defaultdict(float))  # year -> month -> total_mm
+    per_year_months_present = defaultdict(set)  # year -> set(month_index)
     
     # Process daily data
     dates = rainfall_data.get('time', [])
@@ -1100,7 +1070,8 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
             year = date_obj.year
             
             # Store data
-            monthly_data[month_name]['rainfall'].append(rain_sums[i] or 0)
+            daily_rain = rain_sums[i] or 0
+            monthly_data[month_name]['rainfall'].append(daily_rain)
             monthly_data[month_name]['temperature'].append(temperatures[i] or 25)
             
             # Initialize yearly data if needed
@@ -1113,16 +1084,20 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
                     'wettest_month': '',
                     'driest_month': ''
                 }
+            # Accumulate per-year monthly totals and track month coverage
+            per_year_monthly_totals[year][month_name] += float(daily_rain)
+            per_year_months_present[year].add(date_obj.month)
     
-    # Calculate monthly averages
+    # Calculate monthly totals and averages
     monthly_averages = {}
     for month in months:
         if monthly_data[month]['rainfall']:
-            avg_rainfall = sum(monthly_data[month]['rainfall']) / len(monthly_data[month]['rainfall'])
+            # Sum all daily rainfall for the month (rain_sum is daily total, not average)
+            total_monthly_rainfall = sum(monthly_data[month]['rainfall'])
             avg_temp = sum(monthly_data[month]['temperature']) / len(monthly_data[month]['temperature'])
             
             monthly_averages[month] = {
-                'average_rainfall': round(avg_rainfall, 1),
+                'average_rainfall': round(total_monthly_rainfall, 1),
                 'min_rainfall': round(min(monthly_data[month]['rainfall']), 1),
                 'max_rainfall': round(max(monthly_data[month]['rainfall']), 1),
                 'average_temperature': round(avg_temp, 1),
@@ -1154,7 +1129,7 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
         annual_temp = sum(all_temps) / len(all_temps) if all_temps else 25
         
         # Find wettest and driest months
-        month_rainfall = {month: sum(monthly_data[month]['rainfall']) / len(monthly_data[month]['rainfall']) 
+        month_rainfall = {month: sum(monthly_data[month]['rainfall']) 
                          for month in months if monthly_data[month]['rainfall']}
         
         if month_rainfall:
@@ -1175,6 +1150,40 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
             }
         })
     
+    # Build per-year breakdown with monthly totals and annual sums (for averaging)
+    per_year_list = []
+    candidate_years = sorted(per_year_monthly_totals.keys(), reverse=True)
+    if allowed_years:
+        candidate_years = [y for y in candidate_years if y in set(allowed_years)]
+    for year in candidate_years:
+        monthly_totals_map = {}
+        for m in months:
+            monthly_totals_map[m] = round(per_year_monthly_totals[year].get(m, 0.0), 1)
+        annual_total = round(sum(monthly_totals_map.values()), 1)
+        months_covered = len(per_year_months_present.get(year, set()))
+        coverage = 'full' if months_covered == 12 else 'partial'
+        per_year_list.append({
+            'year': year,
+            'monthly': monthly_totals_map,
+            'annual_rainfall': annual_total,
+            'months_covered': months_covered,
+            'coverage': coverage,
+        })
+
+    # Compute multi-year averages when multiple years requested
+    multi_year = None
+    if per_year_list and len(per_year_list) >= 1:
+        annuals = [y['annual_rainfall'] for y in per_year_list]
+        # monthly mean across years per month
+        monthly_avg_map = {}
+        for m in months:
+            vals = [y['monthly'].get(m, 0.0) for y in per_year_list]
+            monthly_avg_map[m] = round((sum(vals) / len(vals)) if vals else 0.0, 1)
+        multi_year = {
+            'annual_average': round((sum(annuals) / len(annuals)) if annuals else 0.0, 1),
+            'monthly_average': monthly_avg_map,
+        }
+
     # Calculate climate summary
     total_rainfall = sum(month['average_rainfall'] for month in monthly_averages.values())
     wettest_month = max(monthly_averages.keys(), key=lambda k: monthly_averages[k]['average_rainfall'])
@@ -1191,11 +1200,14 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
     return {
         'location': f"{lat},{lon}",
         'coordinates': {'lat': lat, 'lon': lon},
-        'years_analyzed': years,
+        'years_analyzed': len(per_year_list) if allowed_years else years,
         'period_start': start_date.strftime('%Y-%m-%d'),
         'period_end': current_date.strftime('%Y-%m-%d'),
         'monthly_averages': monthly_averages,
         'yearly_breakdown': yearly_breakdown if years > 1 else None,
+        # New additive fields for multi-year analysis and UI
+        'per_year': per_year_list,
+        'multi_year': multi_year,
         'climate_summary': {
             'total_annual_rainfall': round(total_rainfall, 1),
             'wettest_month': wettest_month,
@@ -1203,7 +1215,7 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
             'climate_trend': f'Based on REAL historical rainfall data for last {years} year(s)',
             'drought_risk': drought_risk,
             'analysis_period': f'{start_date.strftime("%B %Y")} to {current_date.strftime("%B %Y")}',
-            'data_note': 'Rainfall: Real historical data from Open-Meteo API. Temperature: Real data from OpenWeatherMap.'
+            'data_note': 'Rainfall & temperature from Open-Meteo Archive (ERA5/ERA5-Land).'
         },
         'agricultural_implications': {
             'wet_season': 'November to March - ideal for rain-fed crops',
@@ -1214,310 +1226,135 @@ def process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, curre
         },
         'timestamp': datetime.now().isoformat(),
         'mock_data': False,
-        'data_source': 'Open-Meteo + OpenWeatherMap'
+        'data_source': 'Open-Meteo (ERA5/ERA5-Land)'
     }
 
-def get_real_historical_weather(lat, lon, years):
-    """Get real historical weather data using OpenWeatherMap One Call API 3.0
-    
-    Data is retrieved chronologically from current date backwards for the specified number of years.
-    For example:
-    - 1 year: Data from current date back to 1 year ago
-    - 2 years: Data from current date back to 2 years ago
-    - etc.
-    
-    Uses the One Call API 3.0 Time Machine feature to get actual historical data.
+def get_real_historical_weather(lat, lon, years, explicit_years=None):
+    """Get real historical weather data using Open-Meteo Archive only.
+
+    Returns None if Open-Meteo is unavailable; the caller will 503 (no synthetic fallback).
     """
     try:
-        import requests
         from datetime import datetime, timedelta
-        from collections import defaultdict
-        import random
-        
-        # OpenWeatherMap API key
-        api_key = os.environ.get("OPENWEATHERMAP_API_KEY")
-        if not api_key:
-            return None
-            
+
         print(f"Fetching REAL historical weather data for {lat}, {lon} (last {years} years)")
-        
-        # Calculate date range: from current date backwards
+
         current_date = datetime.now()
-        start_date = current_date - timedelta(days=365 * years)
-        
-        print(f"Historical period: {start_date.strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')}")
-        
-        # First, try to get real historical rainfall data from Open-Meteo
-        print("Fetching real historical rainfall data from Open-Meteo API...")
-        rainfall_data = get_historical_rainfall_data(lat, lon, start_date, current_date)
-        
-        if rainfall_data:
-            print("✅ Successfully retrieved real rainfall data from Open-Meteo!")
-            return process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, current_date)
-        else:
-            print("⚠️ Open-Meteo data not available, using One Call API 3.0 + scientific model...")
-        
-        # One Call API 3.0 Time Machine endpoint
-        time_machine_url = "https://api.openweathermap.org/data/3.0/onecall/timemachine"
-        
-        # Initialize data structures
-        months = ['January', 'February', 'March', 'April', 'May', 'June',
-                 'July', 'August', 'September', 'October', 'November', 'December']
-        wet_season_months = ['November', 'December', 'January', 'February', 'March']
-        
-        # Store daily data for aggregation
-        daily_data_by_month = defaultdict(lambda: {'temps': [], 'rainfall': [], 'humidity': []})
-        yearly_data = {}
-        
-        # Sample historical data: Get one day per month for each year
-        # This reduces API calls while still getting representative data
-        total_days_to_fetch = years * 12  # One day per month per year
-        print(f"Fetching {total_days_to_fetch} days of historical data (1 day per month)...")
-        
-        api_calls_made = 0
-        api_call_limit = min(total_days_to_fetch, 50)  # Limit API calls to avoid excessive costs
-        
-        for year_offset in range(years):
-            target_year = current_date.year - year_offset
-            yearly_data[target_year] = {
-                'year': target_year,
-                'monthly_data': {},
-                'annual_rainfall': 0,
-                'avg_temperature': 0,
-                'wettest_month': '',
-                'driest_month': ''
-            }
-            
-            for month_idx in range(1, 13):
-                if api_calls_made >= api_call_limit:
-                    print(f"Reached API call limit ({api_call_limit}). Using available data...")
-                    break
-                    
-                # Get mid-month date for representative data
-                try:
-                    sample_date = datetime(target_year, month_idx, 15)
-                except ValueError:
-                    continue  # Skip invalid dates
-                
-                # Only fetch if date is in the past
-                if sample_date >= current_date:
+        # If explicit years are provided, fetch each year separately to avoid gaps and partial windows
+        if explicit_years:
+            year_list = sorted(list({int(y) for y in explicit_years}), reverse=True)[:10]
+            print(f"[OBSERVABILITY] Explicit years requested: {year_list}")
+            aggregate = {'time': [], 'rain_sum': [], 'temperature_2m_mean': []}
+            failed_years = []
+            for y in year_list:
+                y_start = datetime(y, 1, 1)
+                y_end = datetime(y, 12, 31)
+                if y == current_date.year:
+                    y_end = current_date
+                print(f"[OBSERVABILITY] Fetching year {y}: {y_start.strftime('%Y-%m-%d')} to {y_end.strftime('%Y-%m-%d')}")
+                y_data = get_historical_rainfall_data(lat, lon, y_start, y_end)
+                if not y_data:
+                    print(f"[WARN] Year {y} fetch failed")
+                    failed_years.append(y)
                     continue
-                
-                # Convert to Unix timestamp
-                timestamp = int(sample_date.timestamp())
-                
-                # Make API call
-                params = {
-            'lat': lat,
-            'lon': lon,
-                    'dt': timestamp,
-            'appid': api_key,
-            'units': 'metric'
-        }
-        
-                try:
-                    response = requests.get(time_machine_url, params=params, timeout=10)
-                    api_calls_made += 1
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        
-                        # Extract hourly data from the response
-                        if 'data' in data and len(data['data']) > 0:
-                            hourly_temps = []
-                            hourly_rainfall = []
-                            hourly_humidity = []
-                            
-                            for hour_data in data['data']:
-                                hourly_temps.append(hour_data.get('temp', 0))
-                                hourly_humidity.append(hour_data.get('humidity', 0))
-                                
-                                # One Call API 3.0 Time Machine doesn't include rainfall data
-                                # Use scientifically accurate rainfall patterns based on Malawi climate
-                                humidity = hour_data.get('humidity', 60)
-                                cloud_cover = hour_data.get('clouds', 0)
-                                temperature = hour_data.get('temp', 25)
-                                pressure = hour_data.get('pressure', 1013)
-                                
-                                # Get current month name for climate calculations
-                                current_month_name = months[month_idx - 1]
-                                
-                                # Calculate scientifically accurate rainfall using multiple factors
-                                base_rainfall = calculate_realistic_rainfall(
-                                    current_month_name, humidity, cloud_cover, 
-                                    temperature, pressure, lat, lon, target_year
-                                )
-                                
-                                hourly_rainfall.append(base_rainfall)
-                            
-                            # Calculate daily averages
-                            month_name = months[month_idx - 1]
-                            daily_temp = sum(hourly_temps) / len(hourly_temps) if hourly_temps else 25
-                            daily_rainfall = sum(hourly_rainfall)  # Total for the day
-                            daily_humidity = sum(hourly_humidity) / len(hourly_humidity) if hourly_humidity else 60
-                            
-                            # Store data
-                            daily_data_by_month[month_name]['temps'].append(daily_temp)
-                            daily_data_by_month[month_name]['rainfall'].append(daily_rainfall)
-                            daily_data_by_month[month_name]['humidity'].append(daily_humidity)
-                            
-                            print(f"  ✓ Fetched {month_name} {target_year}: {daily_temp:.1f}°C, {daily_rainfall:.1f}mm rain")
-                    else:
-                        print(f"  ✗ API error for {months[month_idx-1]} {target_year}: Status {response.status_code}")
-                        
-                except Exception as e:
-                    print(f"  ✗ Error fetching {months[month_idx-1]} {target_year}: {e}")
-                
-                # Small delay to avoid rate limiting
-                import time
-                time.sleep(0.1)
-        
-        print(f"Total API calls made: {api_calls_made}")
-        
-        # If we couldn't get enough data, return None to fall back to mock data
-        if api_calls_made == 0:
-            print("No historical data retrieved from API. Falling back to mock data.")
-            return None
-        
-        # Build response structure
-        historical_data = {
-            'location': f"{lat},{lon}",
-            'coordinates': {'lat': lat, 'lon': lon},
-            'years_analyzed': years,
-            'period_start': start_date.strftime('%Y-%m-%d'),
-            'period_end': current_date.strftime('%Y-%m-%d'),
-            'monthly_averages': {},
-            'timestamp': datetime.now().isoformat(),
-            'mock_data': False,
-            'api_calls_made': api_calls_made
-        }
-        
-        # Calculate monthly averages from collected data
-        for month in months:
-            month_data = daily_data_by_month[month]
-            if month_data['temps']:
-                # Scale rainfall from daily to monthly estimate (multiply by ~30 days)
-                rainfall_values = [r * 30 for r in month_data['rainfall']]
-                
-                historical_data['monthly_averages'][month] = {
-                    'average_rainfall': round(sum(rainfall_values) / len(rainfall_values), 1),
-                    'min_rainfall': round(min(rainfall_values), 1),
-                    'max_rainfall': round(max(rainfall_values), 1),
-                    'average_temperature': round(sum(month_data['temps']) / len(month_data['temps']), 1),
-                    'min_temperature': round(min(month_data['temps']), 1),
-                    'max_temperature': round(max(month_data['temps']), 1),
-                    'average_humidity': round(sum(month_data['humidity']) / len(month_data['humidity']), 1),
-                    'years_analyzed': years
-                }
-            else:
-                # Use Malawi climate defaults if no data available
-                if month in wet_season_months:
-                    default_rainfall = 150
-                    default_temp = 25
-                else:
-                    default_rainfall = 15
-                    default_temp = 22
+                # Concatenate daily arrays
+                aggregate['time'].extend(y_data.get('time', []))
+                aggregate['rain_sum'].extend(y_data.get('rain_sum', []))
+                aggregate['temperature_2m_mean'].extend(y_data.get('temperature_2m_mean', []))
+
+            if not aggregate['time']:
+                return None
+
+            start_date = datetime(min(year_list), 1, 1)
+            end_date = current_date if max(year_list) == current_date.year else datetime(max(year_list), 12, 31)
+            print(f"[OBSERVABILITY] Historical period (explicit): {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            print(f"[OBSERVABILITY] Failed years: {failed_years if failed_years else 'None'}")
+            print("[OK] Successfully retrieved per-year rainfall data from Open-Meteo!")
+            result = process_real_rainfall_data(aggregate, lat, lon, len(year_list), start_date, end_date, year_list)
+            if failed_years:
+                result['meta'] = {'failed_years': failed_years}
             
-            historical_data['monthly_averages'][month] = {
-                    'average_rainfall': default_rainfall,
-                    'min_rainfall': round(default_rainfall * 0.5, 1),
-                    'max_rainfall': round(default_rainfall * 1.5, 1),
-                    'average_temperature': default_temp,
-                    'min_temperature': round(default_temp - 3, 1),
-                    'max_temperature': round(default_temp + 3, 1),
-                    'average_humidity': 60,
-                'years_analyzed': years
-            }
-        
-        # Add climate summary
-        total_rainfall = sum(month['average_rainfall'] for month in historical_data['monthly_averages'].values())
-        wettest_month = max(historical_data['monthly_averages'].keys(), 
-                           key=lambda k: historical_data['monthly_averages'][k]['average_rainfall'])
-        driest_month = min(historical_data['monthly_averages'].keys(), 
-                          key=lambda k: historical_data['monthly_averages'][k]['average_rainfall'])
-        
-        # Assess drought risk based on total rainfall and variability
-        avg_annual_rainfall = total_rainfall
-        if avg_annual_rainfall < 600:
-            drought_risk = 'high'
-        elif avg_annual_rainfall < 800:
-            drought_risk = 'moderate'
+            # Log clean summary of results
+            print("\n" + "="*80)
+            print(f"[RAINFALL DATA SUMMARY] Location: {lat}, {lon}")
+            print("="*80)
+            if result.get('per_year'):
+                for yr in result['per_year']:
+                    coverage_marker = "[PARTIAL]" if yr.get('coverage') == 'partial' else "[FULL]"
+                    print(f"  Year {yr['year']} {coverage_marker}: {yr['annual_rainfall']} mm ({yr.get('months_covered', 0)}/12 months)")
+            if result.get('multi_year'):
+                print(f"\n  Multi-Year Average: {result['multi_year']['annual_average']} mm")
+            print(f"  Period: {result.get('period_start')} to {result.get('period_end')}")
+            print(f"  Source: Open-Meteo Archive (ERA5/ERA5-Land)")
+            print("="*80 + "\n")
+            
+            return result
         else:
-            drought_risk = 'low'
-        
-        historical_data['climate_summary'] = {
-            'total_annual_rainfall': round(total_rainfall, 1),
-            'wettest_month': wettest_month,
-            'driest_month': driest_month,
-            'climate_trend': f'Based on real temperature data + Malawi climate patterns for last {years} year(s)',
-            'drought_risk': drought_risk,
-            'analysis_period': f'{start_date.strftime("%B %Y")} to {current_date.strftime("%B %Y")}',
-            'data_note': 'Temperature & humidity: Real historical data. Rainfall: Calculated from climate patterns.'
-        }
-        
-        # Calculate yearly breakdown for multi-year data
-        if years > 1:
-            historical_data['yearly_breakdown'] = []
+            start_date = current_date - timedelta(days=365 * years)
+            end_date = current_date
+
+            print(f"Historical period: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            print("Fetching real historical rainfall data from Open-Meteo API...")
+
+            rainfall_data = get_historical_rainfall_data(lat, lon, start_date, end_date)
+            if not rainfall_data:
+                return None
+
+            print("[OK] Successfully retrieved real rainfall data from Open-Meteo!")
+            result = process_real_rainfall_data(rainfall_data, lat, lon, years, start_date, end_date)
             
-            for year in sorted(yearly_data.keys(), reverse=True):  # Most recent first
-                # Calculate annual stats for this year
-                year_rainfall_by_month = {}
-                year_temp_values = []
-                
-                for month in months:
-                    month_data = daily_data_by_month[month]
-                    # Filter data points that belong to this specific year (simplified - use available data)
-                    if month_data['temps']:
-                        avg_rainfall = sum([r * 30 for r in month_data['rainfall']]) / len(month_data['rainfall'])
-                        avg_temp = sum(month_data['temps']) / len(month_data['temps'])
-                        
-                        year_rainfall_by_month[month] = avg_rainfall
-                        year_temp_values.append(avg_temp)
-                
-                if year_rainfall_by_month:
-                    annual_rainfall = sum(year_rainfall_by_month.values())
-                    avg_temperature = sum(year_temp_values) / len(year_temp_values) if year_temp_values else 24
-                    wettest = max(year_rainfall_by_month.keys(), key=lambda k: year_rainfall_by_month[k])
-                    driest = min(year_rainfall_by_month.keys(), key=lambda k: year_rainfall_by_month[k])
-                    
-                    wet_season_total = sum(year_rainfall_by_month.get(m, 0) for m in wet_season_months)
-                    dry_season_total = sum(year_rainfall_by_month.get(m, 0) for m in months if m not in wet_season_months)
-                    
-                    historical_data['yearly_breakdown'].append({
-                        'year': year,
-                        'annual_rainfall': round(annual_rainfall, 1),
-                        'avg_temperature': round(avg_temperature, 1),
-                        'wettest_month': wettest,
-                        'driest_month': driest,
-                        'monthly_summary': {
-                            'wet_season_total': round(wet_season_total, 1),
-                            'dry_season_total': round(dry_season_total, 1)
-                        }
-                    })
-        
-        # Add simplified monthly averages (only key months for summary)
-        key_months = ['November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August']
-        historical_data['key_monthly_averages'] = {}
-        for month in key_months:
-            if month in historical_data['monthly_averages']:
-                historical_data['key_monthly_averages'][month] = historical_data['monthly_averages'][month]
-        
-        # Add agricultural implications
-        historical_data['agricultural_implications'] = {
-            'wet_season': 'November to March - ideal for rain-fed crops',
-            'dry_season': 'April to October - irrigation recommended',
-            'planting_window': 'November to December for most crops',
-            'harvest_period': 'March to May depending on crop variety',
-            'data_note': f'Averages based on historical patterns from last {years} year(s)'
-        }
-        
-        return historical_data
-        
+            # Log clean summary of results
+            print("\n" + "="*80)
+            print(f"[RAINFALL DATA SUMMARY] Location: {lat}, {lon}")
+            print("="*80)
+            if result.get('per_year'):
+                for yr in result['per_year']:
+                    coverage_marker = "[PARTIAL]" if yr.get('coverage') == 'partial' else "[FULL]"
+                    print(f"  Year {yr['year']} {coverage_marker}: {yr['annual_rainfall']} mm ({yr.get('months_covered', 0)}/12 months)")
+            if result.get('multi_year'):
+                print(f"\n  Multi-Year Average: {result['multi_year']['annual_average']} mm")
+            print(f"  Period: {result.get('period_start')} to {result.get('period_end')}")
+            print(f"  Source: Open-Meteo Archive (ERA5/ERA5-Land)")
+            print("="*80 + "\n")
+            
+            return result
+
     except Exception as e:
         print(f"Historical weather API error: {e}")
-        import traceback
-        traceback.print_exc()
         return None
+
+@app.route('/api/_debug/openmeteo-sum', methods=['GET'])
+def debug_openmeteo_sum():
+    """Debug endpoint: fetch year's rainfall from Open-Meteo and return raw sum for verification"""
+    try:
+        from datetime import datetime
+        lat = float(request.args.get('lat', -13.9833))
+        lon = float(request.args.get('lon', 33.7833))
+        year = int(request.args.get('year', datetime.now().year))
+        
+        y_start = datetime(year, 1, 1)
+        y_end = datetime(year, 12, 31)
+        if year == datetime.now().year:
+            y_end = datetime.now()
+        
+        rainfall_data = get_historical_rainfall_data(lat, lon, y_start, y_end)
+        if not rainfall_data:
+            return jsonify({'error': 'No data from Open-Meteo'}), 503
+        
+        rain_sums = rainfall_data.get('rain_sum', [])
+        total = round(sum(r or 0 for r in rain_sums), 1)
+        
+        return jsonify({
+            'year': year,
+            'lat': lat,
+            'lon': lon,
+            'daily_count': len(rain_sums),
+            'total_rainfall_mm': total,
+            'source': 'Open-Meteo Archive (ERA5)',
+            'note': 'Dev-only debug endpoint for data integrity checks'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
@@ -2219,9 +2056,9 @@ def parse_location(location):
         return -13.9833, 33.7833
 
 if __name__ == '__main__':
-    print("🚀 Starting Mlangizi wa Ulimi API Server...")
-    print("📍 Frontend should be running on: http://localhost:5173")
-    print("🔗 API will be available on: http://localhost:8000")
-    print("📚 API Documentation: http://localhost:8000/api/health")
+    print("[START] Starting Mlangizi wa Ulimi API Server...")
+    print("[INFO] Frontend should be running on: http://localhost:5173")
+    print("[INFO] API will be available on: http://localhost:8000")
+    print("[INFO] API Documentation: http://localhost:8000/api/health")
     
     app.run(debug=True, host='0.0.0.0', port=8000)

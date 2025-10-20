@@ -43,12 +43,12 @@ export const useRainfallData = (lat: number, lon: number) => {
   )
 }
 
-export const useHistoricalWeather = (lat: number, lon: number, years: number = 5) => {
+export const useHistoricalWeather = (lat: number, lon: number, yearsOrList: number | number[] = 5, shouldFetch: boolean = true) => {
   return useQuery(
-    ['historical-weather', lat, lon, years],
-    () => weatherAPI.getHistoricalWeather(lat, lon, years),
+    ['historical-weather', lat, lon, yearsOrList],
+    () => weatherAPI.getHistoricalWeather(lat, lon, yearsOrList),
     {
-      enabled: !!(lat && lon),
+      enabled: !!(lat && lon && shouldFetch),
       staleTime: 24 * 60 * 60 * 1000, // 24 hours
       cacheTime: 7 * 24 * 60 * 60 * 1000, // 7 days
       retry: 1,

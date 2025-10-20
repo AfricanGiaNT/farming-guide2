@@ -1,0 +1,51 @@
+## What I Built (Context)
+I tightened the weather pipeline for my Agricultural Advisor app. I moved historical rainfall to rely exclusively on Open‑Meteo Archive and removed the OpenWeather fallback that was synthesizing rain. I added a simple 24‑hour cache and clear provenance in API responses. This directly powers the Monthly Rainfall Breakdown cards and anything that depends on monthly precip totals.
+
+## The Challenge
+The current system occasionally fell back to OpenWeather’s time‑machine response which doesn’t reliably provide rain for Malawi. To compensate, I had added a “scientific model” that inferred rainfall from humidity, cloud cover, and pressure. It looked clever but produced inconsistent numbers and made data provenance murky. I needed a single, auditable source of truth with predictable behavior and no synthetic precipitation.
+
+## My Action (Steps I Took)
+1. Mapped the entire data path: UI cards → `src/services/api.ts` → Flask route → aggregation.
+2. Verified that monthly totals come from daily `rain_sum` but fell back to an OpenWeather‑driven model when Open‑Meteo failed.
+3. Removed the fallback path and deleted the synthetic rainfall branch from the historical flow.
+4. Kept Open‑Meteo daily `rain_sum` and summed by calendar month; preserved temperature handling.
+5. Added a 24‑hour JSON cache (`data/weather_cache.json`) keyed by `lat,lon,start,end` to reduce duplicate archive calls.
+6. Updated provenance: `data_source: Open‑Meteo (ERA5/ERA5‑Land)` and a clear `data_note` in the response.
+7. Confirmed via logs that the endpoint now prints “Successfully retrieved real rainfall data from Open‑Meteo” and returns 200.
+
+## Approaches I Tried
+- Keep OpenWeather + model as a secondary path: I rejected this because it hides uncertainty and mixes measured and synthesized data.
+- Multi‑source real fallback (Open‑Meteo → Meteostat/NASA POWER → 503): solid idea, but I deferred it to keep today’s change small and reversible.
+- CHIRPS bias‑correction for Malawi: likely the most accurate monthly totals, but it adds another provider and caching. I logged it as a follow‑up.
+
+## Problems I Faced Along the Way
+- Windows console choked on emoji in early prints: `UnicodeEncodeError` due to CP‑1252. Fix is to set `PYTHONIOENCODING=utf-8` or remove emoji from prints.
+- A handful of import‑resolution warnings existed already; I verified they don’t impact the weather code path.
+- Ensuring the cache doesn’t mask fresh data: I used a short 24‑hour TTL for historical windows, which rarely change.
+
+## The Outcome
+Historical rainfall totals are now entirely based on Open‑Meteo daily `rain_sum`, summed per month. There is no synthetic precipitation. API responses clearly state the source and include a short explanation. A 24‑hour cache reduces latency and external calls. Logs confirm the Open‑Meteo‑only path and successful 200 responses.
+
+## Debugging Notes
+Error: `UnicodeEncodeError: 'charmap' codec can't encode character '\u2705'` on Windows console at startup.
+Fix: Set `PYTHONIOENCODING=utf-8` before running Python, or remove emoji from config load prints.
+
+## Insight (Optional)
+I’m reminded that “clever” models can erode trust if they’re not transparent. Clear provenance plus simple math beats opaque heuristics—especially when recommendations affect planting decisions.
+
+## Reflection (Optional)
+This was a small but meaningful refactor. By removing the synthetic branch, I simplified maintenance, improved explainability, and created room for higher‑quality upgrades (CHIRPS bias‑correction, multi‑source fallback) without confusing users now. Next time, I’ll add an explicit `cache_hit` flag in responses to aid observability.
+
+---
+
+### Session Context (Condensed)
+- Asked to explain how rainfall is calculated and where figures come from.
+- Identified Open‑Meteo daily `rain_sum` → monthly sums as primary; OpenWeather + synthetic model as fallback.
+- Recommended swapping to Open‑Meteo only, proposed optional CHIRPS bias‑correction and multi‑source real fallback.
+- Implemented the swap, added cache, updated provenance, verified via logs.
+
+### Follow‑Ups / Tickets
+- Add CHIRPS monthly bias‑correction for Malawi (optional feature flag).
+- Add `cache_hit` boolean in API response for diagnostics.
+- UI: show “Data source: Open‑Meteo (ERA5/ERA5‑Land)” under Annual Rainfall.
+- Remove emoji in startup prints or enforce UTF‑8 output on Windows.
