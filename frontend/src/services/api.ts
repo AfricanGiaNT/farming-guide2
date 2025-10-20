@@ -302,9 +302,9 @@ class ApiService {
     return this.request(`/weather/${encodeURIComponent(location)}/historical?years=${years}`);
   }
 
-  // Enhanced Historical Weather API
+  // Enhanced Historical Weather API (uses the same endpoint as regular historical)
   async getEnhancedHistoricalWeather(location: string, years: number = 5): Promise<HistoricalWeatherData> {
-    return this.request(`/weather/${encodeURIComponent(location)}/enhanced?years=${years}`);
+    return this.request(`/weather/${encodeURIComponent(location)}/historical?years=${years}`);
   }
 
   // Google Maps coordinate extraction API
