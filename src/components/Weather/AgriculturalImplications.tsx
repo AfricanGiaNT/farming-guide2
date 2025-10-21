@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Card,
   CardContent,
@@ -9,6 +10,7 @@ import {
   Chip,
   Divider,
   Paper,
+  Button,
 } from '@mui/material'
 import {
   Opacity as DropletsIcon,
@@ -17,6 +19,7 @@ import {
   TrendingUp as TrendingUpIcon,
   CalendarMonth as CalendarIcon,
   Agriculture as SproutIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material'
 
 interface CropRecommendation {
@@ -71,7 +74,12 @@ interface AgriculturalImplicationsProps {
 }
 
 const AgriculturalImplications: React.FC<AgriculturalImplicationsProps> = ({ data }) => {
+  const navigate = useNavigate()
   const { wet_season, dry_season, variability, extreme_events, warnings, advice } = data
+
+  const handleSeeMore = () => {
+    navigate('/crops')
+  }
 
   const getVariabilityColor = (level: string): 'success' | 'warning' | 'error' | 'default' => {
     switch (level) {
@@ -159,67 +167,6 @@ const AgriculturalImplications: React.FC<AgriculturalImplicationsProps> = ({ dat
           </Typography>
         </Box>
 
-        {/* Rainfall Variability */}
-        <Box mb={3}>
-          <Box display="flex" alignItems="center" gap={1} mb={2}>
-            <TrendingUpIcon sx={{ fontSize: 24 }} />
-            <Typography variant="h6" fontWeight="bold">
-              Climate Variability
-            </Typography>
-          </Box>
-          <Box display="flex" alignItems="center" gap={2}>
-            <Chip
-              label={`${variability.level} Variability`}
-              color={getVariabilityColor(variability.level)}
-              sx={{ fontSize: '1rem', py: 2.5, px: 1 }}
-            />
-            <Box>
-              <Typography variant="h4" fontWeight="bold">
-                {variability.percentage}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {variability.interpretation}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Extreme Events */}
-        <Box mb={3}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>
-            Extreme Events
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light' }}>
-                <Typography variant="h3" fontWeight="bold" color="warning.dark">
-                  {extreme_events.drought_years}
-                </Typography>
-                <Typography variant="body2" color="warning.dark">
-                  Drought Years
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={6}>
-              <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light' }}>
-                <Typography variant="h3" fontWeight="bold" color="info.dark">
-                  {extreme_events.flood_years}
-                </Typography>
-                <Typography variant="body2" color="info.dark">
-                  Flood Years
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-          <Typography variant="caption" display="block" textAlign="center" mt={1} color="text.secondary">
-            Based on {extreme_events.total_years_analyzed} years of data
-          </Typography>
-        </Box>
-
-        <Divider sx={{ my: 3 }} />
-
         {/* Wet Season Crops */}
         <Box mb={3}>
           <Typography variant="h6" fontWeight="bold" color="primary.main" mb={1}>
@@ -230,13 +177,27 @@ const AgriculturalImplications: React.FC<AgriculturalImplicationsProps> = ({ dat
             <strong> Avg Rainfall:</strong> {Math.round(wet_season.average_monthly_rainfall_mm)}mm/month
           </Typography>
           {wet_season.suitable_crops && wet_season.suitable_crops.length > 0 ? (
-            <Grid container spacing={2}>
-              {wet_season.suitable_crops.map((crop, idx) => (
-                <Grid item xs={12} md={6} lg={4} key={idx}>
-                  <CropCard crop={crop} />
-                </Grid>
-              ))}
-            </Grid>
+            <>
+              <Grid container spacing={2}>
+                {wet_season.suitable_crops.map((crop, idx) => (
+                  <Grid item xs={12} md={6} lg={4} key={idx}>
+                    <CropCard crop={crop} />
+                  </Grid>
+                ))}
+              </Grid>
+              
+              <Box display="flex" justifyContent="center" mt={3}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={handleSeeMore}
+                  size="large"
+                >
+                  See More
+                </Button>
+              </Box>
+            </>
           ) : (
             <Typography variant="body2" color="text.secondary" fontStyle="italic">
               No suitable crops identified for this season based on rainfall patterns.
@@ -244,73 +205,6 @@ const AgriculturalImplications: React.FC<AgriculturalImplicationsProps> = ({ dat
           )}
         </Box>
 
-        <Divider sx={{ my: 3 }} />
-
-        {/* Dry Season Crops */}
-        <Box mb={3}>
-          <Typography variant="h6" fontWeight="bold" sx={{ color: 'orange' }} mb={1}>
-            ☀️ Dry Season: Suitable Crops
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            <strong>Months:</strong> {dry_season.months.join(', ')} • 
-            <strong> Avg Rainfall:</strong> {Math.round(dry_season.average_monthly_rainfall_mm)}mm/month
-          </Typography>
-          {dry_season.suitable_crops && dry_season.suitable_crops.length > 0 ? (
-            <Grid container spacing={2}>
-              {dry_season.suitable_crops.map((crop, idx) => (
-                <Grid item xs={12} md={6} lg={4} key={idx}>
-                  <CropCard crop={crop} />
-                </Grid>
-              ))}
-            </Grid>
-          ) : (
-            <Typography variant="body2" color="text.secondary" fontStyle="italic">
-              Limited rainfall for dry season cropping. Irrigation may be required.
-            </Typography>
-          )}
-        </Box>
-
-        {/* Warnings */}
-        {warnings && warnings.length > 0 && (
-          <>
-            <Divider sx={{ my: 3 }} />
-            <Box mb={3}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <WarningIcon color="error" />
-                <Typography variant="h6" fontWeight="bold" color="error.main">
-                  Warnings
-                </Typography>
-              </Box>
-              {warnings.map((warning, idx) => (
-                <Alert key={idx} severity="error" sx={{ mb: 1 }}>
-                  {warning}
-                </Alert>
-              ))}
-            </Box>
-          </>
-        )}
-
-        {/* Advice */}
-        {advice && advice.length > 0 && (
-          <>
-            <Divider sx={{ my: 3 }} />
-            <Box>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <LightbulbIcon color="success" />
-                <Typography variant="h6" fontWeight="bold" color="success.main">
-                  Recommendations
-                </Typography>
-              </Box>
-              <Box component="ul" sx={{ pl: 2 }}>
-                {advice.map((item, idx) => (
-                  <Box component="li" key={idx} sx={{ mb: 1 }}>
-                    <Typography variant="body2">{item}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          </>
-        )}
       </CardContent>
     </Card>
   )

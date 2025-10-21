@@ -36,7 +36,7 @@ import CurrentWeatherCard from '../../components/Weather/CurrentWeatherCard'
 import WeatherForecastCard from '../../components/Weather/WeatherForecastCard'
 import HistoricalWeatherChart from '../../components/Weather/HistoricalWeatherChart'
 import MonthlyRainfallTable from '../../components/Weather/MonthlyRainfallTable'
-import SimplifiedLocationInput from '../../components/Weather/SimplifiedLocationInput'
+import SimplifiedLocationInput from '../../components/Location/SimplifiedLocationInput'
 import AgriculturalInsights from '../../components/Weather/AgriculturalInsights'
 import AgriculturalImplications from '../../components/Weather/AgriculturalImplications'
 import { weatherAPI } from '../../services/api'
@@ -362,16 +362,8 @@ const Weather: React.FC = () => {
                 historical={historical} 
                 loading={historicalLoading}
               />
-              
-              {/* Historical Chart - Secondary Display */}
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Visual Trends
-                </Typography>
-                <HistoricalWeatherChart historical={historical} />
-              </Box>
 
-              {/* Agricultural Implications - New Section */}
+              {/* Agricultural Implications - Crop Recommendations */}
               {loadingRecommendations ? (
                 <Box sx={{ mt: 3 }}>
                   <Skeleton variant="rectangular" height={400} />

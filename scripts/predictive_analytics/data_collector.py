@@ -230,41 +230,14 @@ class DataCollector:
         """Get harvest month for season."""
         return "04" if season == "rainy" else "08"
     
-    def _save_mock_data(self, mock_data: List[Dict[str, Any]], crop_id: str) -> None:
-        """Save mock data to JSON file."""
+    def load_real_yield_data(self, crop_id: str) -> List[Dict[str, Any]]:
+        """Load real yield data from historical sources."""
         try:
-            # Ensure data directory exists
-            os.makedirs("data", exist_ok=True)
-            
-            # Load existing data if any
-            existing_data = {}
-            if os.path.exists(self.mock_data_file):
-                with open(self.mock_data_file, 'r') as f:
-                    existing_data = json.load(f)
-            
-            # Add new mock data
-            if crop_id not in existing_data:
-                existing_data[crop_id] = []
-            
-            existing_data[crop_id].extend(mock_data)
-            
-            # Save updated data
-            with open(self.mock_data_file, 'w') as f:
-                json.dump(existing_data, f, indent=2)
+            # This would load from real historical yield databases
+            # For now, return empty list as we're removing mock data
+            logger.info(f"Loading real yield data for {crop_id}")
+            return []
                 
         except Exception as e:
-            logger.error(f"Error saving mock data: {e}")
-    
-    def load_mock_data(self, crop_id: str) -> List[Dict[str, Any]]:
-        """Load mock yield data from file."""
-        try:
-            if not os.path.exists(self.mock_data_file):
-                return []
-            
-            with open(self.mock_data_file, 'r') as f:
-                data = json.load(f)
-                return data.get(crop_id, [])
-                
-        except Exception as e:
-            logger.error(f"Error loading mock data: {e}")
+            logger.error(f"Error loading real yield data: {e}")
             return [] 

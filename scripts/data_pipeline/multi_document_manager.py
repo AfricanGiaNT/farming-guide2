@@ -430,20 +430,13 @@ class MultiDocumentManager:
         }
 
 
-# Mock data for testing
-def setup_mock_metadata():
-    """Set up mock metadata for testing"""
+# Real data setup for production
+def setup_real_metadata():
+    """Set up real metadata for production use"""
     manager = MultiDocumentManager()
     
-    # Mock metadata for sample.pdf
-    manager.document_metadata['sample.pdf'] = {
-        'title': 'Agricultural Guide',
-        'author': 'Ministry of Agriculture',
-        'creation_date': '2024-01-01',
-        'language': 'en',
-        'page_count': 150,
-        'word_count': 25000
-    }
+    # Real metadata will be populated from actual document processing
+    # This function serves as a placeholder for real data initialization
     
     return manager
 

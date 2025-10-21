@@ -33,3 +33,4 @@ def test_explicit_years_list():
         assert 'months_covered' in y
         assert y['coverage'] in ('full', 'partial')
 
+

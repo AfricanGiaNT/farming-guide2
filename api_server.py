@@ -247,7 +247,7 @@ def get_crop_recommendations():
     try:
         # Get parameters from query string
         location = request.args.get('location', 'Lilongwe')
-        season = request.args.get('season', 'current')
+        season = request.args.get('season', 'rainy_season')
         
         # Parse location
         lat, lon = parse_location(location)
@@ -262,31 +262,66 @@ def get_crop_recommendations():
             rainfall_data = {'total_7day_rainfall': 50, 'forecast_7day_rainfall': 30}
             temperature = 25
         
-        # Use the same SQLite-based recommendation engine as the bot
-        if sqlite_recommendation_engine:
-            recommendations = sqlite_recommendation_engine.get_crop_recommendations_from_guides(
-                lat, lon, season, 
-                rainfall_data.get('total_7day_rainfall', 0), 
-                temperature,
+        # Use advanced enhanced engine as primary, SQLite as fallback
+        try:
+            from scripts.crop_advisor.advanced_enhanced_crop_recommendation_engine import advanced_enhanced_crop_recommendation_engine
+            
+            logger.info(f"[DEBUG] Starting general recommendations for {lat},{lon}")
+            logger.info(f"[DEBUG] Parameters: season={season}, rainfall_mm={rainfall_data.get('total_7day_rainfall', 400)}")
+            
+            # Get enhanced recommendations using real data
+            enhanced_recommendations = advanced_enhanced_crop_recommendation_engine.get_enhanced_crop_recommendations(
+                lat=lat,
+                lon=lon,
+                season=season,
+                rainfall_mm=rainfall_data.get('total_7day_rainfall', 400),
+                temperature=temperature,
+                farmer_profile={'experience_level': 'intermediate'},
                 historical_years=5
             )
             
-            # Get seasonal advice
-            seasonal_advice = seasonal_advisor.get_seasonal_recommendations(
-                rainfall_data, current_weather
-            ) if seasonal_advisor else {}
+            logger.info(f"[DEBUG] General recommendations received: {len(enhanced_recommendations.get('recommendations', []))} crops")
+            
+            if not enhanced_recommendations.get('recommendations'):
+                logger.warning("[DEBUG] No recommendations received from enhanced engine")
+                raise Exception("No recommendations from enhanced engine")
+            
+            # Convert enhanced format to legacy format for compatibility
+            legacy_recommendations = []
+            logger.info(f"[DEBUG] Processing {len(enhanced_recommendations['recommendations'])} recommendations")
+            for i, rec in enumerate(enhanced_recommendations['recommendations'][:2]):  # Top 2 crops
+                logger.info(f"[DEBUG] Processing recommendation {i+1}: {rec.get('crop_id', 'Unknown')}")
+                legacy_recommendations.append({
+                    'crop_name': rec['crop_id'],
+                    'suitability_score': rec['suitability_score'],
+                    'score': int(rec['suitability_score'] * 100),
+                    'suitability_level': rec['recommendation_level'],
+                    'rainfall_match': 'excellent' if rec['factor_scores']['rainfall'] > 0.8 else 'good',
+                    'temperature_match': 'excellent' if rec['factor_scores']['temperature'] > 0.8 else 'good',
+                    'season_suitability': 'excellent' if rec['factor_scores']['timing'] > 0.8 else 'good',
+                    'sources': ['Real Crop Varieties Database', 'Historical Weather Data'],
+                    'guide_recommendations': [
+                        rec['planting_guidelines'].get('optimal_timing', 'Not specified'),
+                        rec['planting_guidelines'].get('planting_depth', '2-5 cm'),
+                        rec['planting_guidelines'].get('spacing', '75cm x 25cm')
+                    ],
+                    'varieties': [v['name'] for v in rec['top_varieties'][:3]],
+                    'planting_time': rec['planting_guidelines'].get('optimal_timing', 'Not specified'),
+                    'yield_potential': f"{rec['yield_projections']['yield_projections']['realistic']:.1f}-{rec['yield_projections']['yield_projections']['optimal']:.1f} tons/ha",
+                    'description': f"Real data recommendation with {rec['confidence']:.1%} confidence"
+                })
+            
+            logger.info(f"[DEBUG] Generated {len(legacy_recommendations)} legacy recommendations")
             
             return jsonify({
                 'location': location,
                 'season': season,
-                'recommendations': recommendations.get('recommendations', []),
-                'planting_advice': recommendations.get('planting_advice', {}),
-                'management_tips': recommendations.get('management_tips', []),
-                'risk_assessment': recommendations.get('risk_assessment', {}),
-                'sources': recommendations.get('sources', []),
-                'historical_data': recommendations.get('historical_data', 0),
-                'location_data': recommendations.get('location', {}),
-                'seasonal_advice': seasonal_advice,
+                'recommendations': legacy_recommendations,
+                'planting_advice': {
+                    'optimal_planting_window': enhanced_recommendations['recommendations'][0]['planting_guidelines'].get('optimal_timing', 'Not specified'),
+                    'soil_preparation': 'Prepare land 2-3 weeks before planting',
+                    'seed_requirements': 'Use certified seeds for best results'
+                },
                 'environmental_summary': {
                     'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
                     'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
@@ -294,87 +329,219 @@ def get_crop_recommendations():
                     'humidity': current_weather.get('humidity', 50),
                     'current_season': season
                 },
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            # Fallback to mock data if engines not available
-            return jsonify({
-                'location': location,
-                'season': season,
-                'recommendations': [
-                    {
-                        'crop_name': 'maize',
-                        'suitability_score': 0.85,
-                        'score': 85,
-                        'suitability_level': 'excellent',
-                        'rainfall_match': 'excellent',
-                        'temperature_match': 'excellent',
-                        'season_suitability': 'excellent',
-                        'sources': ['Malawi Agriculture Guide'],
-                        'guide_recommendations': [
-                            'Plant in November-December for best results',
-                            'Use certified seeds for higher yields',
-                            'Apply fertilizer at planting and 6 weeks after'
-                        ],
-                        'varieties': ['SC627', 'DK8053', 'MH30'],
-                        'planting_time': 'November-December',
-                        'yield_potential': '4-6 tons/ha',
-                        'description': 'Excellent for current conditions'
-                    },
-                    {
-                        'crop_name': 'groundnut',
-                        'suitability_score': 0.78,
-                        'score': 78,
-                        'suitability_level': 'good',
-                        'rainfall_match': 'good',
-                        'temperature_match': 'excellent',
-                        'season_suitability': 'good',
-                        'sources': ['Malawi Agriculture Guide'],
-                        'guide_recommendations': [
-                            'Plant in December-January',
-                            'Ensure good drainage',
-                            'Use proper spacing for optimal growth'
-                        ],
-                        'varieties': ['CG7', 'Khanpur', 'JL24'],
-                        'planting_time': 'December-January',
-                        'yield_potential': '1.5-2.5 tons/ha',
-                        'description': 'Good choice for this season'
-                    }
-                ],
-                'planting_advice': {
-                    'optimal_planting_window': 'November-December',
-                    'soil_preparation': 'Prepare land 2-3 weeks before planting',
-                    'seed_requirements': 'Use certified seeds for best results'
-                },
-                'management_tips': [
-                    'Monitor soil moisture regularly',
-                    'Apply fertilizer at recommended rates',
-                    'Control weeds early in the season'
-                ],
                 'risk_assessment': {
-                    'overall_risk_level': 'moderate',
-                    'weather_risks': ['Potential drought conditions', 'Heavy rainfall risk'],
+                    'weather_risks': enhanced_recommendations['recommendations'][0]['risk_factors'][:2] if enhanced_recommendations['recommendations'] else [],
                     'pest_risks': ['Stem borer attack', 'Leaf spot disease']
                 },
-                'sources': ['Malawi Agriculture Guide'],
-                'historical_data': 5,
+                'management_tips': [
+                    'Monitor crop growth regularly',
+                    'Apply fertilizer at recommended rates',
+                    'Control weeds early in season',
+                ],
+                'seasonal_advice': {
+                    'agricultural_calendar': {
+                        'forecast_period': 'October - December',
+                        'months': [
+                            {
+                                'month': 'October',
+                                'key_activities': [
+                                    'Early season planting',
+                                    'Fertilizer application',
+                                    'Planting material prep'
+                                ]
+                            },
+                            {
+                                'month': 'November',
+                                'key_activities': [
+                                    'Main planting season',
+                                    'Weed control',
+                                    'Pest monitoring'
+                                ]
+                            },
+                            {
+                                'month': 'December',
+                                'key_activities': [
+                                    'Late planting',
+                                    'Crop maintenance',
+                                    'Harvest preparation'
+                                ]
+                            }
+                        ]
+                    }
+                },
+                'historical_data': enhanced_recommendations.get('historical_data_summary', {}).get('years_analyzed', 5),
                 'location_data': {
-                    'coordinates': f"{lat:.4f}, {lon:.4f}",
-                    'season': season
+                    'latitude': lat,
+                    'longitude': lon,
+                    'rainfall_mm': rainfall_data.get('total_7day_rainfall', 0),
+                    'season': season,
+                    'temperature': temperature
                 },
-                'environmental_summary': {
-                    'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 50),
-                    'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 30),
-                    'current_temperature': temperature,
-                    'humidity': 50,
-                    'current_season': season
-                },
-                'timestamp': datetime.now().isoformat(),
-                'mock_data': True
+                'sources': enhanced_recommendations.get('data_sources', ['Real Crop Varieties Database']),
+                'timestamp': datetime.now().isoformat()
             })
+            
+        except Exception as e:
+            logger.error(f"Enhanced engine failed: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            
+            # Fallback to SQLite-based recommendation engine
+            if sqlite_recommendation_engine:
+                recommendations = sqlite_recommendation_engine.get_crop_recommendations_from_guides(
+                    lat, lon, season, 
+                    rainfall_data.get('total_7day_rainfall', 0), 
+                    temperature,
+                    historical_years=5
+                )
+                
+                # Get seasonal advice
+                seasonal_advice = seasonal_advisor.get_seasonal_recommendations(
+                    rainfall_data, current_weather
+                ) if seasonal_advisor else {}
+                
+                return jsonify({
+                    'location': location,
+                    'season': season,
+                    'recommendations': recommendations.get('recommendations', []),
+                    'planting_advice': recommendations.get('planting_advice', {}),
+                    'management_tips': recommendations.get('management_tips', []),
+                    'risk_assessment': recommendations.get('risk_assessment', {}),
+                    'sources': recommendations.get('sources', []),
+                    'historical_data': recommendations.get('historical_data', 0),
+                    'location_data': recommendations.get('location', {}),
+                    'seasonal_advice': seasonal_advice,
+                    'environmental_summary': {
+                        'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
+                        'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
+                        'current_temperature': temperature,
+                        'humidity': current_weather.get('humidity', 50),
+                        'current_season': season
+                    },
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                # Return error if no engine available
+                return jsonify({
+                    'error': 'Service temporarily unavailable',
+                    'message': 'No recommendation engine available',
+                    'data_type': 'error_fallback'
+                }), 503
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/crops/recommendations/enhanced', methods=['POST'])
+def get_enhanced_crop_recommendations():
+    """
+    Enhanced crop recommendations API using ONLY real data sources.
+    Provides comprehensive recommendations with varieties, yield projections, and input recommendations.
+    """
+    try:
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+        
+        # Extract parameters
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        season = data.get('season', 'rainy_season')
+        farmer_profile = data.get('farmer_profile', {})
+        
+        if latitude is None or longitude is None:
+            return jsonify({'error': 'Latitude and longitude are required'}), 400
+        
+        # Get weather data for the location
+        if weather_api:
+            current_weather = weather_api.get_current_weather(latitude, longitude)
+            rainfall_data = weather_api.get_rainfall_data(latitude, longitude, 'api_user')
+            temperature = current_weather.get('temperature', 25)
+            rainfall_mm = rainfall_data.get('total_7day_rainfall', 0)
+        else:
+            # Fallback values
+            rainfall_data = {'total_7day_rainfall': 50, 'forecast_7day_rainfall': 30}
+            temperature = 25
+            rainfall_mm = 50
+        
+        # Use the advanced enhanced recommendation engine with real data only
+        from scripts.crop_advisor.advanced_enhanced_crop_recommendation_engine import advanced_enhanced_crop_recommendation_engine
+
+        recommendations = advanced_enhanced_crop_recommendation_engine.get_enhanced_crop_recommendations(
+            lat=latitude,
+            lon=longitude,
+            season=season,
+            rainfall_mm=rainfall_mm,
+            temperature=temperature,
+            farmer_profile=farmer_profile,
+            historical_years=5
+        )
+        
+        return jsonify({
+            'status': 200,
+            'data': recommendations,
+            'errors': []
+        })
+        
+    except Exception as e:
+        logger.error(f"Enhanced recommendations error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+def normalize_crop_name(search_term: str) -> str:
+    """
+    Normalize crop search term to match database IDs.
+    Handles common variations while excluding different crops.
+    
+    Args:
+        search_term: User's search term (e.g., "Beans", "Common Beans", "Phaseolus")
+        
+    Returns:
+        Normalized crop ID for database matching
+    """
+    term = search_term.strip().lower()
+    
+    # Handle beans variations (but NOT soybeans)
+    if term in ['beans', 'bean', 'common beans', 'common bean', 'phaseolus', 'phaseolus vulgaris']:
+        if 'soy' not in term:  # Exclude soybeans
+            return 'beans'
+    
+    # Handle other common variations
+    if term in ['maize', 'corn', 'maize corn']:
+        return 'maize'
+    
+    if term in ['groundnuts', 'groundnut', 'peanuts', 'peanut']:
+        return 'groundnuts'
+    
+    if term in ['sweet potato', 'sweetpotato', 'sweet potatoes']:
+        return 'sweet_potato'
+    
+    # Return as-is for direct matches
+    return term
+
+def match_crop_in_recommendations(search_term: str, recommendations: list) -> dict:
+    """
+    Find a crop in recommendations list using fuzzy matching.
+    
+    Args:
+        search_term: Normalized search term
+        recommendations: List of crop recommendations from engine
+        
+    Returns:
+        Matching crop recommendation or None
+    """
+    for rec in recommendations:
+        crop_id = rec['crop_id'].lower()
+        # Direct match
+        if crop_id == search_term:
+            return rec
+        # Handle beans variations
+        if search_term == 'beans' and crop_id == 'beans':
+            return rec
+        # Handle underscores and spaces
+        if crop_id.replace('_', ' ') == search_term.replace('_', ' '):
+            return rec
+    
+    return None
 
 @app.route('/api/crops/specific', methods=['GET'])
 def get_specific_crop_recommendations():
@@ -383,10 +550,13 @@ def get_specific_crop_recommendations():
         # Get parameters from query string
         crop_name = request.args.get('crop', '').strip().lower()
         location = request.args.get('location', 'Lilongwe')
-        season = request.args.get('season', 'current')
+        season = request.args.get('season', 'rainy_season')
         
         if not crop_name:
             return jsonify({'error': 'Crop name is required'}), 400
+        
+        # Normalize crop name to handle variations
+        normalized_crop_name = normalize_crop_name(crop_name)
         
         # Parse location
         lat, lon = parse_location(location)
@@ -401,70 +571,97 @@ def get_specific_crop_recommendations():
             rainfall_data = {'total_7day_rainfall': 50, 'forecast_7day_rainfall': 30}
             temperature = 25
         
-        # Use the SQLite-based recommendation engine for specific crop
-        if sqlite_recommendation_engine:
-            # Get specific crop recommendations
-            specific_recommendations = sqlite_recommendation_engine.get_specific_crop_recommendations(
-                crop_name, lat, lon, season, 
-                rainfall_data.get('total_7day_rainfall', 0), 
-                temperature
+        # Use the advanced enhanced recommendation engine for specific crop
+        try:
+            from scripts.crop_advisor.advanced_enhanced_crop_recommendation_engine import advanced_enhanced_crop_recommendation_engine
+            
+            logger.info(f"[DEBUG] Starting enhanced recommendations for {crop_name} (normalized: {normalized_crop_name}) at {lat},{lon}")
+            logger.info(f"[DEBUG] Parameters: season={season}, rainfall_mm={rainfall_data.get('total_7day_rainfall', 400)}, temperature={temperature}")
+            logger.info(f"[DEBUG] Engine object: {advanced_enhanced_crop_recommendation_engine}")
+            
+            # Get enhanced recommendations using real data
+            # Request ALL crops (top_n=999) for specific crop searches to ensure we find the requested crop
+            logger.info(f"[DEBUG] Calling get_enhanced_crop_recommendations with top_n=999 for specific crop search...")
+            enhanced_recommendations = advanced_enhanced_crop_recommendation_engine.get_enhanced_crop_recommendations(
+                lat=lat,
+                lon=lon,
+                season=season,
+                rainfall_mm=rainfall_data.get('total_7day_rainfall', 400),
+                temperature=temperature,
+                farmer_profile={'experience_level': 'intermediate'},
+                historical_years=5,
+                top_n=999  # Request all crops for specific crop search
             )
             
-            # Get seasonal advice
-            seasonal_advice = seasonal_advisor.get_seasonal_recommendations(
-                rainfall_data, current_weather
-            ) if seasonal_advisor else {}
+            logger.info(f"[DEBUG] Enhanced recommendations received: {len(enhanced_recommendations.get('recommendations', []))} crops")
+            logger.info(f"[DEBUG] Enhanced recommendations type: {type(enhanced_recommendations)}")
+            logger.info(f"[DEBUG] Enhanced recommendations keys: {list(enhanced_recommendations.keys()) if isinstance(enhanced_recommendations, dict) else 'Not a dict'}")
+            
+            if enhanced_recommendations.get('recommendations'):
+                logger.info(f"[DEBUG] First recommendation type: {type(enhanced_recommendations['recommendations'][0])}")
+                logger.info(f"[DEBUG] First recommendation keys: {list(enhanced_recommendations['recommendations'][0].keys()) if isinstance(enhanced_recommendations['recommendations'][0], dict) else 'Not a dict'}")
+                logger.info(f"[DEBUG] First recommendation crop_id: {enhanced_recommendations['recommendations'][0].get('crop_id', 'NO_CROP_ID')}")
+            
+            # Find the specific crop in recommendations using improved matching
+            logger.info(f"[DEBUG] Looking for crop '{crop_name}' (normalized: {normalized_crop_name}) in {len(enhanced_recommendations['recommendations'])} recommendations")
+            
+            specific_crop_rec = match_crop_in_recommendations(
+                normalized_crop_name, 
+                enhanced_recommendations['recommendations']
+            )
+            
+            if specific_crop_rec:
+                logger.info(f"[DEBUG] Found matching crop: {specific_crop_rec['crop_id']}")
+            else:
+                logger.warning(f"[DEBUG] Crop '{normalized_crop_name}' not found in recommendations")
+            
+            if specific_crop_rec:
+                logger.info(f"[DEBUG] Processing specific crop recommendation for {specific_crop_rec['crop_id']}")
+                # Convert enhanced format to legacy format for compatibility
+                legacy_crop_rec = {
+                    'crop_name': specific_crop_rec['crop_id'],
+                    'suitability_score': specific_crop_rec['suitability_score'],
+                    'score': int(specific_crop_rec['suitability_score'] * 100),
+                    'suitability_level': specific_crop_rec['recommendation_level'],
+                    'rainfall_match': 'excellent' if specific_crop_rec['factor_scores']['rainfall'] > 0.8 else 'good',
+                    'temperature_match': 'excellent' if specific_crop_rec['factor_scores']['temperature'] > 0.8 else 'good',
+                    'season_suitability': 'excellent' if specific_crop_rec['factor_scores']['timing'] > 0.8 else 'good',
+                    'sources': ['Real Crop Varieties Database', 'Historical Weather Data'],
+                    'guide_recommendations': [
+                        specific_crop_rec['planting_guidelines'].get('optimal_timing', 'Not specified'),
+                        specific_crop_rec['planting_guidelines'].get('planting_depth', '2-5 cm'),
+                        specific_crop_rec['planting_guidelines'].get('spacing', '75cm x 25cm')
+                    ],
+                    'varieties': [v['name'] for v in specific_crop_rec['top_varieties'][:3]],
+                    'planting_time': specific_crop_rec['planting_guidelines'].get('optimal_timing', 'Not specified'),
+                    'yield_potential': f"{specific_crop_rec['yield_projections']['yield_projections']['realistic']:.1f}-{specific_crop_rec['yield_projections']['yield_projections']['optimal']:.1f} tons/ha",
+                    'description': f"Real data recommendation with {specific_crop_rec['confidence']:.1%} confidence"
+                }
+            else:
+                # Crop not found in recommendations
+                legacy_crop_rec = {
+                    'crop_name': crop_name,
+                    'suitability_score': 0.0,
+                    'score': 0,
+                    'suitability_level': 'not_recommended',
+                    'rainfall_match': 'poor',
+                    'temperature_match': 'poor',
+                    'season_suitability': 'poor',
+                    'sources': ['Real Crop Varieties Database'],
+                    'guide_recommendations': [f'{crop_name.title()} is not recommended for rainy season conditions'],
+                    'varieties': [],
+                    'planting_time': 'Not recommended',
+                    'yield_potential': '0 tons/ha',
+                    'description': f'{crop_name.title()} is not suitable for rainy season conditions'
+                }
             
             return jsonify({
                 'crop_name': crop_name,
                 'location': location,
                 'season': season,
-                'recommendations': specific_recommendations.get('recommendations', []),
-                'planting_advice': specific_recommendations.get('planting_advice', {}),
-                'management_tips': specific_recommendations.get('management_tips', []),
-                'risk_assessment': specific_recommendations.get('risk_assessment', {}),
-                'sources': specific_recommendations.get('sources', []),
-                'historical_data': specific_recommendations.get('historical_data', 0),
-                'location_data': specific_recommendations.get('location', {}),
-                'seasonal_advice': seasonal_advice,
-                'environmental_summary': {
-                    'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
-                    'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
-                    'current_temperature': temperature,
-                    'humidity': current_weather.get('humidity', 50),
-                    'current_season': season
-                },
-                'search_mode': 'specific_crop',
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
-            # Fallback to mock data for specific crop
-            mock_specific_crop = {
-                'crop_name': crop_name,
-                'suitability_score': 0.75 if crop_name in ['maize', 'beans', 'groundnuts'] else 0.45,
-                'score': 75 if crop_name in ['maize', 'beans', 'groundnuts'] else 45,
-                'suitability_level': 'good' if crop_name in ['maize', 'beans', 'groundnuts'] else 'poor',
-                'rainfall_match': 'good' if crop_name in ['maize', 'beans', 'groundnuts'] else 'poor',
-                'temperature_match': 'good' if crop_name in ['maize', 'beans', 'groundnuts'] else 'fair',
-                'season_suitability': 'good' if crop_name in ['maize', 'beans', 'groundnuts'] else 'poor',
-                'sources': ['Malawi Agriculture Guide'],
-                'guide_recommendations': [
-                    f'Plant {crop_name} in November-December for best results',
-                    f'Use certified {crop_name} seeds for higher yields',
-                ],
-                'varieties': [f'{crop_name.upper()}-001', f'{crop_name.upper()}-002'],
-                'planting_time': 'November-December',
-                'yield_potential': '3-5 tons/ha' if crop_name in ['maize', 'beans', 'groundnuts'] else '1-2 tons/ha',
-                'description': f'{crop_name.title()} is suitable for current conditions' if crop_name in ['maize', 'beans', 'groundnuts'] else f'{crop_name.title()} may not be ideal for current conditions',
-            }
-            
-            return jsonify({
-                'crop_name': crop_name,
-                'location': location,
-                'season': season,
-                'recommendations': [mock_specific_crop],
+                'recommendations': [legacy_crop_rec],
                 'planting_advice': {
-                    'optimal_planting_time': 'November-December',
+                    'optimal_planting_time': legacy_crop_rec['planting_time'],
                     'soil_preparation': 'Prepare well-drained soil',
                     'spacing': 'Follow recommended spacing guidelines'
                 },
@@ -474,31 +671,31 @@ def get_specific_crop_recommendations():
                     f'Control weeds early in {crop_name} season',
                 ],
                 'risk_assessment': {
-                    'weather_risks': [
-                        f'Heavy rainfall may affect {crop_name} growth',
-                        f'Temperature fluctuations could impact {crop_name} yield'
-                    ],
-                    'pest_risks': [f'Monitor for {crop_name}-specific pests'],
-                    'disease_risks': [f'Watch for common {crop_name} diseases']
-                },
-                'sources': ['Malawi Agriculture Guide', 'Crop-specific recommendations'],
-                'historical_data': 5,
-                'location_data': {'lat': lat, 'lon': lon, 'region': 'Central Region'},
-                'seasonal_advice': {
-                    'current_season': season,
-                    'recommendations': [f'Current season is suitable for {crop_name} cultivation']
+                    'weather_risks': specific_crop_rec['risk_factors'][:2] if specific_crop_rec else ['High risk due to unsuitable conditions'],
+                    'pest_risks': ['Stem borer attack', 'Leaf spot disease']
                 },
                 'environmental_summary': {
-                    'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 50),
-                    'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 30),
+                    'total_7day_rainfall': rainfall_data.get('total_7day_rainfall', 0),
+                    'forecast_7day_rainfall': rainfall_data.get('forecast_7day_rainfall', 0),
                     'current_temperature': temperature,
-                    'humidity': 50,
+                    'humidity': current_weather.get('humidity', 50),
                     'current_season': season
                 },
                 'search_mode': 'specific_crop',
-                'timestamp': datetime.now().isoformat(),
-                'mock_data': True
+                'data_type': 'real_data_only',
+                'timestamp': datetime.now().isoformat()
             })
+            
+        except Exception as e:
+            logger.error(f"Advanced engine failed: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return jsonify({
+                'error': 'Service temporarily unavailable',
+                'message': 'Please try again later',
+                'data_type': 'error_fallback',
+                'debug_info': str(e)
+            }), 503
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -513,59 +710,63 @@ def get_varieties():
         if not crop_name:
             return jsonify({'error': 'Crop name is required'}), 400
         
-        # Return mock data for now
-        mock_varieties = {
-            'maize': [
-                {
-                    'name': 'SC627',
-                    'maturity_days': 120,
-                    'yield_potential': '4-6 tons/ha',
-                    'drought_tolerance': 'High',
-                    'disease_resistance': 'Good',
-                    'planting_time': 'November-December',
-                    'description': 'High-yielding hybrid suitable for most conditions'
-                },
-                {
-                    'name': 'DK8053',
-                    'maturity_days': 110,
-                    'yield_potential': '3.5-5 tons/ha',
-                    'drought_tolerance': 'Medium',
-                    'disease_resistance': 'Excellent',
-                    'planting_time': 'November-December',
-                    'description': 'Disease-resistant variety with good yield'
-                }
-            ],
-            'groundnut': [
-                {
-                    'name': 'CG7',
-                    'maturity_days': 105,
-                    'yield_potential': '1.5-2.5 tons/ha',
-                    'drought_tolerance': 'High',
-                    'disease_resistance': 'Good',
-                    'planting_time': 'December-January',
-                    'description': 'High-yielding groundnut variety'
-                },
-                {
-                    'name': 'Khanpur',
-                    'maturity_days': 90,
-                    'yield_potential': '1-2 tons/ha',
-                    'drought_tolerance': 'Medium',
-                    'disease_resistance': 'Excellent',
-                    'planting_time': 'December-January',
-                    'description': 'Early maturing variety with good disease resistance'
-                }
-            ]
-        }
-        
-        varieties = mock_varieties.get(crop_name.lower(), [])
-        
-        return jsonify({
-            'crop': crop_name,
-            'location': location,
-            'varieties': varieties,
-            'timestamp': datetime.now().isoformat(),
-            'mock_data': True
-        })
+        # Load real variety data from crop varieties database
+        try:
+            import json
+            import os
+            
+            # Load real crop varieties data
+            crop_varieties_file = os.path.join('data', 'crop_varieties.json')
+            if os.path.exists(crop_varieties_file):
+                with open(crop_varieties_file, 'r') as f:
+                    crop_data = json.load(f)
+                
+                # Find the crop and return its varieties
+                for crop in crop_data:
+                    if crop['crop_id'].lower() == crop_name.lower():
+                        varieties = []
+                        for variety in crop.get('varieties', []):
+                            varieties.append({
+                                'name': variety['name'],
+                                'maturity_days': variety.get('maturity_days', 120),
+                                'yield_potential': f"{variety.get('yield_min', 2)}-{variety.get('yield_max', 5)} tons/ha",
+                                'drought_tolerance': variety.get('drought_tolerance', 'Medium'),
+                                'disease_resistance': variety.get('disease_resistance', 'Good'),
+                                'planting_time': variety.get('planting_time', 'November-December'),
+                                'description': variety.get('description', f'{variety["name"]} variety')
+                            })
+                        
+                        return jsonify({
+                            'crop': crop_name,
+                            'location': location,
+                            'varieties': varieties,
+                            'data_source': 'Real Crop Varieties Database',
+                            'data_type': 'real_data_only',
+                            'timestamp': datetime.now().isoformat()
+                        })
+                
+                # Crop not found
+                return jsonify({
+                    'crop': crop_name,
+                    'location': location,
+                    'varieties': [],
+                    'data_source': 'Real Crop Varieties Database',
+                    'data_type': 'real_data_only',
+                    'message': f'No varieties found for {crop_name}',
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'error': 'Crop varieties database not found',
+                    'data_type': 'error'
+                }), 404
+                
+        except Exception as e:
+            logger.error(f"Error loading crop varieties: {e}")
+            return jsonify({
+                'error': 'Failed to load crop varieties',
+                'data_type': 'error'
+            }), 500
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

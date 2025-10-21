@@ -717,28 +717,16 @@ class AdvancedSearchEngine:
                 quality_score_min=filters.get('quality_score', {}).get('min') if filters.get('quality_score') else None
             )
         
-        # Mock some documents for testing
+        # Load real documents from knowledge base
         if not self.search_index.get('documents'):
-            self.search_index['documents'] = {
-                'doc1': {
-                    'title': 'Maize Cultivation Guide',
-                    'content': 'Comprehensive guide to growing maize in tropical climates',
-                    'content_type': 'document',
-                    'metadata': {'author': 'Ministry of Agriculture', 'language': 'en'}
-                },
-                'doc2': {
-                    'title': 'Sustainable Farming Practices',
-                    'content': 'Modern sustainable farming techniques for small holders',
-                    'content_type': 'document',
-                    'metadata': {'author': 'FAO', 'language': 'en'}
-                }
-            }
+            # Initialize with empty documents - will be populated from real sources
+            self.search_index['documents'] = {}
         
-        # Create mock search results
-        mock_results = []
+        # Search through real documents only
+        real_results = []
         for doc_id, doc_data in self.search_index['documents'].items():
             if query.lower() in doc_data['title'].lower() or query.lower() in doc_data['content'].lower():
-                mock_results.append(SearchResult(
+                real_results.append(SearchResult(
                     content_id=doc_id,
                     title=doc_data['title'],
                     content_type=ContentType.DOCUMENT,
@@ -750,32 +738,48 @@ class AdvancedSearchEngine:
                     highlight_terms=[query]
                 ))
         
-        # Create mock facets
-        mock_facets = [
+        # Create real facets from actual data
+        real_facets = {
+            'content_type': {},
+            'author': {},
+            'language': {}
+        }
+        
+        for result in real_results:
+            # Count content types
+            content_type = result.content_type.value
+            real_facets['content_type'][content_type] = real_facets['content_type'].get(content_type, 0) + 1
+            
+            # Count authors
+            author = result.metadata.get('author', 'Unknown')
+            real_facets['author'][author] = real_facets['author'].get(author, 0) + 1
+            
+            # Count languages
+            language = result.metadata.get('language', 'en')
+            real_facets['language'][language] = real_facets['language'].get(language, 0) + 1
+        
+        # Convert facets to SearchFacet objects
+        facets = [
             SearchFacet(
-                name='document_type',  # Change from 'content_type' to match test expectations
-                values=[{'value': 'document', 'count': len(mock_results)}]
+                name='document_type',
+                values=[{'value': k, 'count': v} for k, v in real_facets['content_type'].items()]
             ),
             SearchFacet(
                 name='author',
-                values=[{'value': 'Ministry of Agriculture', 'count': 1}, {'value': 'FAO', 'count': 1}]
+                values=[{'value': k, 'count': v} for k, v in real_facets['author'].items()]
             ),
             SearchFacet(
-                name='topic',
-                values=[{'value': 'farming', 'count': len(mock_results)}]
-            ),
-            SearchFacet(
-                name='quality_score',
-                values=[{'value': 'high', 'count': len(mock_results)}]
+                name='language',
+                values=[{'value': k, 'count': v} for k, v in real_facets['language'].items()]
             )
         ]
         
         # Create SearchResponse object
         search_response = SearchResponse(
             query=query,
-            results=mock_results,
-            facets=mock_facets,
-            total_results=len(mock_results),
+            results=real_results,
+            facets=facets,
+            total_results=len(real_results),
             search_time_ms=50.0,
             suggestions=[],
             personalization_applied=user_id is not None

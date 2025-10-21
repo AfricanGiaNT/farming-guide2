@@ -422,7 +422,7 @@ Format as JSON array with fields: crop_name, ai_summary, key_benefits, potential
   private fallbackRecommendationEnhancement(recommendations: any[]): EnhancedRecommendation[] {
     return recommendations.map(rec => ({
       ...rec,
-      ai_summary: `${rec.crop_name} is ${rec.suitability_level} for current conditions with ${rec.score}% suitability score.`,
+      ai_summary: `${rec.crop_name} is ${rec.suitability_level} for rainy season conditions with ${rec.score}% suitability score.`,
       key_benefits: [
         `High ${rec.rainfall_match} rainfall match`,
         `Excellent ${rec.temperature_match} temperature suitability`,
