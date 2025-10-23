@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.VITE_API_BASE_URL || '/api',
+  baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   timeout: 15000, // 15 seconds
   headers: {
     'Content-Type': 'application/json',
@@ -116,8 +116,15 @@ export const cropAPI = {
     }
     const queryString = params.toString()
     const url = `/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
-    const response = await api.get(url)
-    return response.data
+    console.log('🌱 API - Fetching variety information for:', { cropName, lat, lon, url })
+    try {
+      const response = await api.get(url)
+      console.log('🌱 API - Variety information response:', response.data)
+      return response.data
+    } catch (error) {
+      console.error(`🌱 API - Error fetching variety information for ${cropName}:`, error)
+      throw error
+    }
   },
 
   // Note: These endpoints don't exist in the backend yet

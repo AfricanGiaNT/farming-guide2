@@ -781,26 +781,59 @@ def get_variety_information(crop_name):
         limit = request.args.get('limit', type=int, default=10)  # Default to 10, max 20
         limit = min(max(limit, 1), 20)  # Clamp between 1 and 20
         
+        # Map common crop names to database names
+        crop_name_mapping = {
+            'beans': 'phaseolus beans',
+            'groundnuts': 'groundnut',
+            'sweet_potato': 'sweet potato',
+            'pigeon_pea': 'pigeonpea',
+            'pearl_millet': 'pearl millet',
+            'finger_millet': 'finger millet',
+            'leafy_vegetables': 'leafy vegetables',
+            'tree_nuts': 'tree nut',
+            # Add hyphenated versions
+            'phaseolus-beans': 'phaseolus beans',
+            'sweet-potato': 'sweet potato',
+            'pigeon-pea': 'pigeonpea',
+            'pearl-millet': 'pearl millet',
+            'finger-millet': 'finger millet',
+            'leafy-vegetables': 'leafy vegetables',
+            'tree-nuts': 'tree nut'
+        }
+        
+        # Use mapped name if available, otherwise use original
+        db_crop_name = crop_name_mapping.get(crop_name.lower(), crop_name.lower())
+        
         # First, try to get varieties from database
         import sqlite3
         conn = sqlite3.connect('data/agricultural_documents.db')
         cursor = conn.cursor()
         
         # Check if varieties table exists and has data for this crop
-        cursor.execute("SELECT COUNT(*) FROM varieties WHERE crop_name = ?", (crop_name.lower(),))
+        cursor.execute("""
+            SELECT COUNT(*) FROM varieties v 
+            JOIN crops c ON v.crop_id = c.id 
+            WHERE c.crop_name = ?
+        """, (db_crop_name,))
         db_count = cursor.fetchone()[0]
         
         if db_count > 0:
             # Get varieties from database
             cursor.execute("""
-                SELECT variety_name, variety_type, yield_potential, maturity_days,
-                       weather_requirements, soil_requirements, growing_areas,
-                       disease_resistance, planting_time, source_document, confidence_score
-                FROM varieties 
-                WHERE crop_name = ? 
-                ORDER BY confidence_score DESC, variety_name
+                SELECT v.variety_name, v.type, v.yield_potential, v.maturity_days,
+                       v.soil_requirements, v.spacing_requirements, v.planting_months,
+                       v.disease_resistance, v.harvesting_guidelines, v.source_document, 
+                       v.extraction_confidence, v.drought_tolerance, v.optimal_temperature_min,
+                       v.optimal_temperature_max, v.min_rainfall_mm, v.max_rainfall_mm,
+                       v.fertilizer_requirements, v.pest_management, v.disease_management,
+                       v.storage_requirements, v.seed_rate_per_hectare, v.expected_yield_per_hectare,
+                       v.market_preference, v.seed_availability, v.cost_per_kg
+                FROM varieties v 
+                JOIN crops c ON v.crop_id = c.id 
+                WHERE c.crop_name = ? 
+                ORDER BY v.extraction_confidence DESC, v.variety_name
                 LIMIT ?
-            """, (crop_name.lower(), limit))
+            """, (db_crop_name, limit))
             
             db_varieties = cursor.fetchall()
             conn.close()
@@ -810,17 +843,31 @@ def get_variety_information(crop_name):
             for row in db_varieties:
                 variety = {
                     'name': row[0] or 'Unknown Variety',
+                    'type': row[1] or 'Standard',
                     'maturity_days': row[3] or 120,
                     'yield_potential': row[2] or 'Not specified',
-                    'drought_tolerance': 'Not specified',  # Not in DB yet
+                    'drought_tolerance': row[11] or 'Not specified',
                     'disease_resistance': row[7] or 'Not specified',
-                    'planting_time': row[8] or 'Seasonal planting',
+                    'planting_time': row[6] or 'Seasonal planting',
                     'description': f'{crop_name} variety with good characteristics',
-                    'weather_requirements': row[4] or 'Not specified',
-                    'soil_requirements': row[5] or 'Not specified',
-                    'growing_areas': row[6] or 'Not specified',
+                    'soil_requirements': row[4] or 'Not specified',
+                    'spacing_requirements': row[5] or 'Not specified',
+                    'harvesting_guidelines': row[8] or 'Not specified',
                     'source_document': row[9] or 'Database',
-                    'confidence_score': row[10] or 0
+                    'extraction_confidence': row[10] or 0,
+                    'optimal_temperature_min': row[12],
+                    'optimal_temperature_max': row[13],
+                    'min_rainfall_mm': row[14],
+                    'max_rainfall_mm': row[15],
+                    'fertilizer_requirements': row[16] or 'Not specified',
+                    'pest_management': row[17] or 'Not specified',
+                    'disease_management': row[18] or 'Not specified',
+                    'storage_requirements': row[19] or 'Not specified',
+                    'seed_rate_per_hectare': row[20],
+                    'expected_yield_per_hectare': row[21],
+                    'market_preference': row[22] or 'Not specified',
+                    'seed_availability': row[23] or 'Not specified',
+                    'cost_per_kg': row[24]
                 }
                 varieties.append(variety)
             

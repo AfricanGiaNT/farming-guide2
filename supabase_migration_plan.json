@@ -1,0 +1,37 @@
+{
+  "project_setup": {
+    "steps": [
+      "1. Create Supabase project at https://supabase.com",
+      "2. Get project URL and API key",
+      "3. Install Supabase client: pip install supabase",
+      "4. Configure environment variables"
+    ]
+  },
+  "database_schema": {
+    "crops_table": "\n                    CREATE TABLE crops (\n                        id SERIAL PRIMARY KEY,\n                        crop_name VARCHAR(100) NOT NULL UNIQUE,\n                        scientific_name VARCHAR(200),\n                        local_name VARCHAR(200),\n                        category VARCHAR(50),\n                        general_description TEXT,\n                        overview_image_url TEXT,\n                        created_at TIMESTAMP DEFAULT NOW(),\n                        updated_at TIMESTAMP DEFAULT NOW()\n                    );\n                ",
+    "varieties_table": "\n                    CREATE TABLE varieties (\n                        id SERIAL PRIMARY KEY,\n                        crop_id INTEGER REFERENCES crops(id) ON DELETE CASCADE,\n                        variety_name VARCHAR(200) NOT NULL,\n                        type VARCHAR(50),\n                        maturity_days INTEGER,\n                        drought_tolerance VARCHAR(50),\n                        disease_resistance JSONB,\n                        yield_potential VARCHAR(50),\n                        planting_months JSONB,\n                        harvest_months JSONB,\n                        min_rainfall_mm INTEGER,\n                        max_rainfall_mm INTEGER,\n                        optimal_temperature_min DECIMAL(5,2),\n                        optimal_temperature_max DECIMAL(5,2),\n                        soil_requirements TEXT,\n                        spacing_requirements TEXT,\n                        fertilizer_requirements TEXT,\n                        pest_management TEXT,\n                        disease_management TEXT,\n                        harvesting_guidelines TEXT,\n                        storage_requirements TEXT,\n                        source_document VARCHAR(200),\n                        extraction_confidence DECIMAL(3,2),\n                        created_at TIMESTAMP DEFAULT NOW(),\n                        updated_at TIMESTAMP DEFAULT NOW()\n                    );\n                ",
+    "farming_processes_table": "\n                    CREATE TABLE farming_processes (\n                        id SERIAL PRIMARY KEY,\n                        variety_id INTEGER REFERENCES varieties(id) ON DELETE CASCADE,\n                        process_type VARCHAR(50),\n                        step_number INTEGER,\n                        step_description TEXT,\n                        timing VARCHAR(200),\n                        tools_required JSONB,\n                        notes TEXT,\n                        created_at TIMESTAMP DEFAULT NOW()\n                    );\n                "
+  },
+  "migration_steps": [
+    "1. Export clean data from SQLite",
+    "2. Create Supabase tables",
+    "3. Migrate data to Supabase",
+    "4. Update API endpoints to use Supabase",
+    "5. Test all functionality",
+    "6. Deploy updated application"
+  ],
+  "api_changes": {
+    "new_dependencies": [
+      "supabase"
+    ],
+    "environment_variables": [
+      "SUPABASE_URL",
+      "SUPABASE_ANON_KEY"
+    ],
+    "code_changes": [
+      "Replace sqlite3 with supabase client",
+      "Update database queries to use Supabase syntax",
+      "Add error handling for Supabase operations"
+    ]
+  }
+}

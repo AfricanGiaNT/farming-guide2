@@ -11,6 +11,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'))
 const Weather = React.lazy(() => import('./pages/Weather/Weather'))
 const CropRecommendations = React.lazy(() => import('./pages/CropRecommendations/CropRecommendations'))
 const Varieties = React.lazy(() => import('./pages/Varieties/Varieties'))
+const ResponsiveVarietyDetail = React.lazy(() => import('./pages/VarietyDetail/ResponsiveVarietyDetail'))
 const KnowledgeBase = React.lazy(() => import('./pages/KnowledgeBase/KnowledgeBase'))
 const MyFarm = React.lazy(() => import('./pages/MyFarm/MyFarm'))
 const Analytics = React.lazy(() => import('./pages/Analytics/Analytics'))
@@ -79,6 +80,7 @@ function App() {
             <Route path="/weather" element={<Weather />} />
             <Route path="/crops" element={<CropRecommendations />} />
             <Route path="/varieties" element={<Varieties />} />
+            <Route path="/varieties/:cropName/:varietyName" element={<ResponsiveVarietyDetail />} />
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="/farm" element={<MyFarm />} />
             <Route path="/analytics" element={<Analytics />} />

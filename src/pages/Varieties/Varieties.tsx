@@ -21,7 +21,7 @@ import {
   Compare as CompareIcon,
 } from '@mui/icons-material'
 import { useVarietyInformation } from '../../hooks/useCropRecommendations'
-import VarietyDetailCard from '../../components/Varieties/VarietyDetailCard'
+import EnhancedVarietyDetailCard from '../../components/Varieties/CompactVarietyCard'
 import VarietyComparison from '../../components/Varieties/VarietyComparison'
 
 const Varieties: React.FC = () => {
@@ -39,10 +39,12 @@ const Varieties: React.FC = () => {
   const { data: varietyData, isLoading, error } = useVarietyInformation(selectedCrop, lat, lon)
 
   const cropOptions = [
-    'Maize', 'Beans', 'Groundnuts', 'Sorghum', 'Cassava', 'Sweet Potato',
-    'Soybeans', 'Pigeon Peas', 'Cowpeas', 'Rice', 'Millet', 'Wheat',
-    'Tomato', 'Onion', 'Cabbage', 'Lettuce', 'Spinach', 'Carrot',
-    'Pepper', 'Eggplant', 'Cucumber', 'Pumpkin', 'Watermelon',
+    'maize', 'phaseolus beans', 'groundnut', 'sorghum', 'cassava', 'sweet potato',
+    'soyabean', 'pigeonpea', 'cowpea', 'rice', 'pearl millet', 'finger millet', 'wheat',
+    'tomatoes', 'onions', 'cabbage', 'leafy vegetables', 'okra', 'carrot',
+    'chillies', 'tumeric', 'ginger', 'cardamom', 'pepper', 'coriander',
+    'citrus', 'bananas', 'pineapples', 'mangoes', 'avocado', 'pawpaw',
+    'tobacco', 'cotton', 'sunflower', 'sesame', 'castor seed'
   ]
 
   // Function to parse coordinates from location input
@@ -114,7 +116,7 @@ const Varieties: React.FC = () => {
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={4}>
               <Autocomplete
-                value={selectedCrop}
+                value={selectedCrop || null}
                 onChange={(_event, newValue) => handleCropSelect(newValue)}
                 options={cropOptions}
                 renderInput={(params) => (
@@ -323,15 +325,16 @@ const Varieties: React.FC = () => {
             />
           </Box>
           
-          <Grid container spacing={3}>
+          <Grid container spacing={2}>
             {filteredVarieties.map((variety: any, index: number) => (
-              <Grid item xs={12} sm={6} md={4} key={variety.name || index}>
-                <VarietyDetailCard
+              <Grid item xs={12} sm={6} md={4} lg={3} key={variety.name || index}>
+                <EnhancedVarietyDetailCard
                   variety={variety}
                   isSelected={selectedVarieties.includes(variety.name)}
                   compareMode={compareMode}
                   onSelect={() => handleVarietySelect(variety.name)}
                   locationSpecific={!!(lat && lon)}
+                  cropName={selectedCrop}
                 />
               </Grid>
             ))}

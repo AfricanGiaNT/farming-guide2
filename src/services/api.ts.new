@@ -1,0 +1,267 @@
+import axios from 'axios'
+
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  timeout: 15000, // 15 seconds
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Request interceptor for authentication
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+// Weather API endpoints
+export const weatherAPI = {
+  getCurrentWeather: async (lat: number, lon: number) => {
+    const response = await api.get(`/weather/${lat},${lon}`)
+    return response.data
+  },
+
+  getWeatherForecast: async (lat: number, lon: number) => {
+    const response = await api.get(`/weather/${lat},${lon}`)
+    return response.data
+  },
+
+  getRainfallData: async (lat: number, lon: number) => {
+    const response = await api.get(`/rainfall/${lat},${lon}`)
+    return response.data
+  },
+
+  getHistoricalWeather: async (lat: number, lon: number, yearsOrList: number | number[] = 5) => {
+    console.log('🌐 API - Fetching historical weather for:', { lat, lon, yearsOrList })
+    try {
+      let url = `/weather/${lat},${lon}/historical`
+      if (Array.isArray(yearsOrList)) {
+        const csv = yearsOrList.join(',')
+        url += `?years_list=${csv}`
+      } else {
+        url += `?years=${yearsOrList}`
+      }
+      const response = await api.get(url)
+      console.log('🌐 API - Historical weather response:', response.data)
+      console.log('🌐 API - Response keys:', Object.keys(response.data))
+      console.log('🌐 API - Monthly averages:', response.data.monthly_averages)
+      return response.data
+    } catch (error) {
+      console.error('🌐 API - Historical weather error:', error)
+      throw error
+    }
+  },
+
+  getAgriculturalRecommendations: async (lat: number, lon: number, years: number = 3) => {
+    console.log('🌐 API - Fetching agricultural recommendations for:', { lat, lon, years })
+    try {
+      const url = `/weather/${lat},${lon}/agricultural-recommendations?years=${years}`
+      const response = await api.get(url)
+      console.log('🌐 API - Agricultural recommendations response:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('🌐 API - Agricultural recommendations error:', error)
+      throw error
+    }
+  },
+}
+
+// Crop API endpoints
+export const cropAPI = {
+  getCropRecommendations: async (
+    lat: number, 
+    lon: number, 
+    season: 'current' | 'rainy' | 'dry' | 'all' = 'current'
+  ) => {
+    const response = await api.get(`/crops?location=${lat},${lon}&season=${season}`)
+    return response.data
+  },
+
+  getSpecificCropRecommendations: async (
+    cropName: string,
+    lat: number,
+    lon: number,
+    season: 'current' | 'rainy' | 'dry' | 'all' = 'current'
+  ) => {
+    const response = await api.get(`/crops/specific?crop=${cropName}&location=${lat},${lon}&season=${season}`)
+    return response.data
+  },
+
+  getVarietyInformation: async (cropName: string, lat?: number, lon?: number) => {
+    const params = new URLSearchParams()
+    if (lat && lon) {
+      params.append('lat', lat.toString())
+      params.append('lon', lon.toString())
+    }
+    const queryString = params.toString()
+    const url = `/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
+    console.log('🌱 API - Fetching variety information for:', { cropName, lat, lon, url })
+    const response = await api.get(url)
+    console.log('🌱 API - Variety information response:', response.data)
+    return response.data
+  },
+
+  // Note: These endpoints don't exist in the backend yet
+  // getPlantingCalendar: async (cropName: string, lat: number, lon: number) => {
+  //   const response = await api.get(`/planting-calendar/${cropName}/${lat}/${lon}`)
+  //   return response.data
+  // },
+
+  // getYieldPrediction: async (cropName: string, lat: number, lon: number) => {
+  //   const response = await api.get(`/yield-prediction/${cropName}/${lat}/${lon}`)
+  //   return response.data
+  // },
+}
+
+// Knowledge Base API endpoints
+export const knowledgeAPI = {
+  searchDocuments: async (
+    query: string, 
+    filters?: {
+      category?: string
+      qualityScore?: number
+      dateRange?: { start: string; end: string }
+    },
+    page: number = 1,
+    limit: number = 10
+  ) => {
+    const response = await api.post('/search', {
+      query,
+      filters,
+      page,
+      limit,
+    })
+    return response.data
+  },
+
+  getCategories: async () => {
+    const response = await api.get('/search/categories')
+    return response.data
+  },
+
+  getDocument: async (documentId: string) => {
+    const response = await api.get(`/documents/${documentId}`)
+    return response.data
+  },
+}
+
+// User feedback API endpoints
+export const feedbackAPI = {
+  submitFeedback: async (feedback: {
+    type: 'rating' | 'comment' | 'helpful' | 'report'
+    contentId: string
+    value: any
+    comment?: string
+  }) => {
+    const response = await api.post('/feedback', feedback)
+    return response.data
+  },
+
+  getFeedbackSummary: async () => {
+    const response = await api.get('/feedback/summary')
+    return response.data
+  },
+}
+
+// Analytics API endpoints
+export const analyticsAPI = {
+  getDashboardData: async () => {
+    const response = await api.get('/analytics/dashboard')
+    return response.data
+  },
+
+  getUsageMetrics: async (period: '7d' | '30d' | '90d' = '30d') => {
+    const response = await api.get(`/analytics/usage?period=${period}`)
+    return response.data
+  },
+}
+
+// Admin API endpoints
+export interface ExtractedVariety {
+  crop_name: string
+  variety_name: string
+  variety_type?: string
+  yield_potential?: string
+  maturity_days?: number
+  weather_requirements?: string
+  soil_requirements?: string
+  growing_areas?: string
+  disease_resistance?: string
+  planting_time?: string
+  source_document?: string
+  confidence_score?: number
+  validation_status?: string
+  extraction_session_id: string
+  context?: string
+}
+
+export interface VarietyExtractionStats {
+  documents_processed: number
+  varieties_extracted: number
+  crops_processed: string[]
+}
+
+export interface VarietyExtractionResult {
+  session_id: string | null
+  varieties: ExtractedVariety[]
+  stats: VarietyExtractionStats
+}
+
+export interface VarietyExtractionParams {
+  crops?: string[]
+  documents?: string[]
+  clear_existing?: boolean
+}
+
+export interface VarietyValidationPayload {
+  session_id: string
+  selected_varieties: ExtractedVariety[]
+  clear_existing?: boolean
+}
+
+export interface VarietyValidationResult {
+  session_id: string
+  varieties_saved: number
+}
+
+export interface ApiResponse<T> {
+  status: 'success' | 'error'
+  message?: string
+  data: T
+  timestamp: string
+}
+
+export const adminAPI = {
+  extractVarietiesForValidation: async (params: VarietyExtractionParams = {}): Promise<ApiResponse<VarietyExtractionResult>> => {
+    const response = await api.post('/admin/varieties/extract', params)
+    return response.data
+  },
+
+  validateSelectedVarieties: async (payload: VarietyValidationPayload): Promise<ApiResponse<VarietyValidationResult>> => {
+    const response = await api.post('/admin/varieties/validate', payload)
+    return response.data
+  },
+}
+
+export default api

@@ -1,5 +1,6 @@
 import { useQuery } from 'react-query'
 import { cropAPI } from '../services/api'
+import { displayToDatabaseName } from '../utils/cropNameMapping'
 
 export const useCropRecommendations = (
   lat: number, 
@@ -22,9 +23,12 @@ export const useCropRecommendations = (
 }
 
 export const useVarietyInformation = (cropName: string, lat?: number, lon?: number) => {
+  // Convert display crop name to database name
+  const databaseCropName = displayToDatabaseName(cropName)
+  
   return useQuery(
-    ['variety-info', cropName, lat, lon],
-    () => cropAPI.getVarietyInformation(cropName, lat, lon),
+    ['variety-info', cropName, databaseCropName, lat, lon],
+    () => cropAPI.getVarietyInformation(databaseCropName, lat, lon),
     {
       enabled: !!cropName,
       staleTime: 60 * 60 * 1000, // 1 hour
@@ -35,9 +39,12 @@ export const useVarietyInformation = (cropName: string, lat?: number, lon?: numb
 }
 
 export const usePlantingCalendar = (cropName: string, lat: number, lon: number) => {
+  // Convert display crop name to database name
+  const databaseCropName = displayToDatabaseName(cropName)
+  
   return useQuery(
-    ['planting-calendar', cropName, lat, lon],
-    () => cropAPI.getPlantingCalendar(cropName, lat, lon),
+    ['planting-calendar', cropName, databaseCropName, lat, lon],
+    () => cropAPI.getPlantingCalendar(databaseCropName, lat, lon),
     {
       enabled: !!(cropName && lat && lon),
       staleTime: 24 * 60 * 60 * 1000, // 24 hours
@@ -48,9 +55,12 @@ export const usePlantingCalendar = (cropName: string, lat: number, lon: number) 
 }
 
 export const useYieldPrediction = (cropName: string, lat: number, lon: number) => {
+  // Convert display crop name to database name
+  const databaseCropName = displayToDatabaseName(cropName)
+  
   return useQuery(
-    ['yield-prediction', cropName, lat, lon],
-    () => cropAPI.getYieldPrediction(cropName, lat, lon),
+    ['yield-prediction', cropName, databaseCropName, lat, lon],
+    () => cropAPI.getYieldPrediction(databaseCropName, lat, lon),
     {
       enabled: !!(cropName && lat && lon),
       staleTime: 60 * 60 * 1000, // 1 hour

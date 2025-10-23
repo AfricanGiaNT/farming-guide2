@@ -1,0 +1,21 @@
+
+================================================================================
+EXTRACTION PLAN FOR RICE
+================================================================================
+
+Pages to process: 168-175
+
+NO VARIETY TABLES FOUND
+Will need to extract from text sections
+
+TEXT SECTIONS: 2
+  Page 168: 6,000 to 7,000 kg per
+2018/19 1,470,641 1,468 2,15...
+  Page 168: NERICA 3 and
+NERICA 4...
+
+NEXT STEPS:
+1. Create structured_rice_extractor.py
+2. Configure page ranges: 168-175
+4. Test extraction in preview mode
+5. Execute full extraction
