@@ -3,7 +3,7 @@ Flask API Server for Mlangizi wa Ulimi Frontend
 Exposes existing backend functionality as REST API endpoints
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import sys
 import os
@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 
 from database.schema_manager import ensure_varieties_schema
+from scripts.handlers.varieties_supabase_handler import VarietiesSupabaseHandler
 
 def load_config():
     """Load configuration from the config directory"""
@@ -66,13 +67,14 @@ CORS(app)  # Enable CORS for frontend communication
 weather_api = None
 recommendation_engine = None
 varieties_handler = None
+supabase_varieties_handler = None
 semantic_search = None
 sqlite_recommendation_engine = None
 seasonal_advisor = None
 
 def initialize_components():
     """Initialize backend components"""
-    global weather_api, recommendation_engine, varieties_handler, semantic_search, sqlite_recommendation_engine, seasonal_advisor
+    global weather_api, recommendation_engine, varieties_handler, supabase_varieties_handler, semantic_search, sqlite_recommendation_engine, seasonal_advisor
     
     print("[INIT] Initializing backend components...")
 
@@ -126,6 +128,14 @@ def initialize_components():
     except Exception as e:
         print(f"[WARN] Varieties handler initialization failed: {e}")
         varieties_handler = None
+        
+    # Initialize Supabase varieties handler
+    try:
+        supabase_varieties_handler = VarietiesSupabaseHandler()
+        print("[OK] Supabase varieties handler initialized")
+    except Exception as e:
+        print(f"[WARN] Supabase varieties handler initialization failed: {e}")
+        supabase_varieties_handler = None
     
     # For other components, keep using mock data to avoid other import issues
     print("[INFO] Other components using mock data for now")
@@ -180,6 +190,7 @@ def health_check():
             'weather_api': weather_api is not None,
             'recommendation_engine': recommendation_engine is not None,
             'varieties_handler': varieties_handler is not None,
+            'supabase_varieties_handler': supabase_varieties_handler is not None,
             'semantic_search': semantic_search is not None
         }
     })
@@ -773,13 +784,54 @@ def get_varieties():
 
 @app.route('/api/varieties/<crop_name>', methods=['GET'])
 def get_variety_information(crop_name):
-    """Get variety information for a specific crop using database first, then knowledge base"""
+    """Get variety information for a specific crop using Supabase first, then fallback to other sources"""
     try:
         # Get location parameters
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
         limit = request.args.get('limit', type=int, default=10)  # Default to 10, max 20
         limit = min(max(limit, 1), 20)  # Clamp between 1 and 20
+        
+        # First, try to get varieties from Supabase
+        if supabase_varieties_handler:
+            try:
+                # Get varieties from Supabase
+                result = supabase_varieties_handler.get_varieties_by_crop(crop_name, limit)
+                
+                print(f"🔍 API Server - Handler result for {crop_name}:")
+                print(f"   total_found: {result.get('total_found', 0)}")
+                print(f"   varieties_count: {len(result.get('varieties', []))}")
+                print(f"   data_source: {result.get('data_source')}")
+                print(f"   has_error: {'error' in result}")
+                
+                # Add weather analysis if location provided
+                if lat and lon:
+                    result['weather_analysis'] = {
+                        'location': f"{lat}, {lon}",
+                        'message': "Location-specific recommendations included"
+                    }
+                else:
+                    result['weather_analysis'] = None
+                    
+                # Add timestamp
+                result['timestamp'] = datetime.now().isoformat()
+                
+                # If we found varieties, return them
+                if result['total_found'] > 0:
+                    print(f"✅ API Server - Returning {result['total_found']} varieties for {crop_name}")
+                    return jsonify(result)
+                    
+                # If no varieties found but we got a proper response, return empty result (200)
+                # Don't continue to fallback if Supabase returned successfully with 0 results
+                if result.get('data_source') == 'supabase' and 'error' not in result:
+                    print(f"No varieties found in Supabase for {crop_name}")
+                    return jsonify(result), 200
+                    
+                # If there was an error, continue to fallback options
+                print(f"Error or no result from Supabase for {crop_name}, falling back to local database")
+            except Exception as e:
+                print(f"Error fetching varieties from Supabase: {e}")
+                # Continue to fallback options
         
         # Map common crop names to database names
         crop_name_mapping = {
@@ -804,22 +856,23 @@ def get_variety_information(crop_name):
         # Use mapped name if available, otherwise use original
         db_crop_name = crop_name_mapping.get(crop_name.lower(), crop_name.lower())
         
-        # First, try to get varieties from database
+        # Fallback: try to get varieties from local SQLite database
         import sqlite3
-        conn = sqlite3.connect('data/agricultural_documents.db')
-        cursor = conn.cursor()
-        
-        # Check if varieties table exists and has data for this crop
-        cursor.execute("""
-            SELECT COUNT(*) FROM varieties v 
-            JOIN crops c ON v.crop_id = c.id 
-            WHERE c.crop_name = ?
-        """, (db_crop_name,))
-        db_count = cursor.fetchone()[0]
-        
-        if db_count > 0:
-            # Get varieties from database
+        try:
+            conn = sqlite3.connect('data/agricultural_documents.db')
+            cursor = conn.cursor()
+            
+            # Check if varieties table exists and has data for this crop
             cursor.execute("""
+                SELECT COUNT(*) FROM varieties v 
+                JOIN crops c ON v.crop_id = c.id 
+                WHERE c.crop_name = ?
+            """, (db_crop_name,))
+            db_count = cursor.fetchone()[0]
+            
+            if db_count > 0:
+                # Get varieties from database
+                cursor.execute("""
                 SELECT v.variety_name, v.type, v.yield_potential, v.maturity_days,
                        v.soil_requirements, v.spacing_requirements, v.planting_months,
                        v.disease_resistance, v.harvesting_guidelines, v.source_document, 
@@ -835,53 +888,67 @@ def get_variety_information(crop_name):
                 LIMIT ?
             """, (db_crop_name, limit))
             
-            db_varieties = cursor.fetchall()
-            conn.close()
+                db_varieties = cursor.fetchall()
+                
+                # Import formatter for consistent variety display
+                from scripts.utils.variety_formatter import format_variety_for_display
             
-            # Format database varieties for frontend
-            varieties = []
-            for row in db_varieties:
-                variety = {
-                    'name': row[0] or 'Unknown Variety',
-                    'type': row[1] or 'Standard',
-                    'maturity_days': row[3] or 120,
-                    'yield_potential': row[2] or 'Not specified',
-                    'drought_tolerance': row[11] or 'Not specified',
-                    'disease_resistance': row[7] or 'Not specified',
-                    'planting_time': row[6] or 'Seasonal planting',
-                    'description': f'{crop_name} variety with good characteristics',
-                    'soil_requirements': row[4] or 'Not specified',
-                    'spacing_requirements': row[5] or 'Not specified',
-                    'harvesting_guidelines': row[8] or 'Not specified',
-                    'source_document': row[9] or 'Database',
-                    'extraction_confidence': row[10] or 0,
-                    'optimal_temperature_min': row[12],
-                    'optimal_temperature_max': row[13],
-                    'min_rainfall_mm': row[14],
-                    'max_rainfall_mm': row[15],
-                    'fertilizer_requirements': row[16] or 'Not specified',
-                    'pest_management': row[17] or 'Not specified',
-                    'disease_management': row[18] or 'Not specified',
-                    'storage_requirements': row[19] or 'Not specified',
-                    'seed_rate_per_hectare': row[20],
-                    'expected_yield_per_hectare': row[21],
-                    'market_preference': row[22] or 'Not specified',
-                    'seed_availability': row[23] or 'Not specified',
-                    'cost_per_kg': row[24]
-                }
-                varieties.append(variety)
-            
-            return jsonify({
-                'crop': crop_name,
-                'real_data': True,
-                'timestamp': datetime.now().isoformat(),
-                'total_found': len(varieties),
-                'varieties': varieties,
-                'data_source': 'database',
-                'weather_analysis': None
-            })
-        
-        conn.close()
+                # Format database varieties for frontend
+                varieties = []
+                for row in db_varieties:
+                    variety = {
+                        'name': row[0] or 'Unknown Variety',
+                        'type': row[1] or 'Standard',
+                        'maturity_days': row[3] or 120,
+                        'yield_potential': row[2] or 'Not specified',
+                        'drought_tolerance': row[11] or 'Not specified',
+                        'disease_resistance': row[7] or [],  # This could be a JSON string array or plain text
+                        'planting_time': row[6] or 'Seasonal planting',
+                        'description': f'{crop_name} variety with good characteristics',
+                        'soil_requirements': row[4] or 'Not specified',
+                        'spacing_requirements': row[5] or 'Not specified',
+                        'harvesting_guidelines': row[8] or 'Not specified',
+                        'source_document': row[9] or 'Database',
+                        'extraction_confidence': row[10] or 0,
+                        'optimal_temperature_min': row[12],
+                        'optimal_temperature_max': row[13],
+                        'min_rainfall_mm': row[14],
+                        'max_rainfall_mm': row[15],
+                        'fertilizer_requirements': row[16] or 'Not specified',
+                        'pest_management': row[17] or 'Not specified',
+                        'disease_management': row[18] or 'Not specified',
+                        'storage_requirements': row[19] or 'Not specified',
+                        'seed_rate_per_hectare': row[20],
+                        'expected_yield_per_hectare': row[21],
+                        'market_preference': row[22] or 'Not specified',
+                        'seed_availability': row[23] or 'Not specified',
+                        'cost_per_kg': row[24]
+                    }
+                    
+                    # Format the variety data for consistent display
+                    formatted_variety = format_variety_for_display(variety)
+                    varieties.append(formatted_variety)
+                
+                # Close SQLite connection
+                conn.close()
+                
+                return jsonify({
+                    'crop': crop_name,
+                    'real_data': True,
+                    'timestamp': datetime.now().isoformat(),
+                    'total_found': len(varieties),
+                    'varieties': varieties,
+                    'data_source': 'database',
+                    'weather_analysis': None
+                })
+        except Exception as e:
+            print(f"Error using SQLite database: {e}")
+            # Make sure connection is closed if an error occurred
+            try:
+                conn.close()
+            except:
+                pass
+            # Continue to next fallback if SQLite fails
         
         # Fallback to knowledge base search if no database varieties
         if not varieties_handler:
@@ -2303,10 +2370,47 @@ def parse_location(location):
         # Default to Lilongwe coordinates
         return -13.9833, 33.7833
 
+# Serve static files from Vite build output
+# This must be registered LAST to avoid interfering with API routes
+DIST_DIR = Path(__file__).parent / 'dist'
+
+def register_frontend_routes():
+    """Register frontend serving routes - must be called after all API routes"""
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        """Serve the frontend SPA - handles both static assets and routing"""
+        # Don't interfere with API routes (shouldn't reach here for /api/* but just in case)
+        if path.startswith('api/'):
+            return jsonify({'error': 'API route not found'}), 404
+        
+        # Check if the file exists in dist directory
+        if path and DIST_DIR.joinpath(path).exists():
+            return send_from_directory(str(DIST_DIR), path)
+        
+        # For SPA routing, serve index.html for all non-API routes
+        if DIST_DIR.joinpath('index.html').exists():
+            return send_from_directory(str(DIST_DIR), 'index.html')
+        
+        # If dist doesn't exist (development), return a helpful message
+        return jsonify({
+            'message': 'Frontend not built. Please run: npm run build',
+            'path': path,
+            'dist_exists': DIST_DIR.exists()
+        }), 503
+
+# Register frontend routes after all API routes
+register_frontend_routes()
+
 if __name__ == '__main__':
     print("[START] Starting Mlangizi wa Ulimi API Server...")
-    print("[INFO] Frontend should be running on: http://localhost:5173")
-    print("[INFO] API will be available on: http://localhost:8000")
-    print("[INFO] API Documentation: http://localhost:8000/api/health")
     
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    # Get port from environment variable (Render sets this) or default to 8000
+    port = int(os.environ.get('PORT', 8000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    
+    print(f"[INFO] API will be available on: http://0.0.0.0:{port}")
+    print(f"[INFO] API Documentation: http://0.0.0.0:{port}/api/health")
+    print(f"[INFO] Debug mode: {debug}")
+    
+    app.run(debug=debug, host='0.0.0.0', port=port)
