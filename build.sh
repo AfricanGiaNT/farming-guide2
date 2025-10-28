@@ -24,8 +24,13 @@ if [ ! -d "dist" ]; then
     exit 1
 fi
 
+# Install Python dependencies
+echo "🐍 Installing Python dependencies..."
+pip install -r requirements.txt
+
 echo "✅ Build complete!"
 echo "📁 Frontend built to: dist/"
 echo "🌐 API base URL: /api"
+echo "🐍 Python dependencies installed"
 echo "🚀 Ready for deployment!"
 
