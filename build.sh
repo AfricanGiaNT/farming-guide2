@@ -17,7 +17,8 @@ export VITE_API_BASE_URL="/api"
 
 # Build frontend
 echo "🏗️  Building frontend..."
-npm run build
+# Use npx to ensure proper permissions
+npx vite build
 
 # Verify dist directory exists
 if [ ! -d "dist" ]; then
