@@ -27,6 +27,8 @@ interface KnowledgeState {
   searchHistory: string[]
   bookmarkedArticles: string[]
   categories: string[]
+  selectedVariety: string | null // UI state: currently viewing variety
+  selectedVarieties: string[] // For comparison mode
   loading: boolean
   error: string | null
   totalResults: number
@@ -40,6 +42,8 @@ const initialState: KnowledgeState = {
   searchFilters: {},
   searchHistory: [],
   bookmarkedArticles: [],
+  selectedVariety: null,
+  selectedVarieties: [],
   categories: [
     'Crop Management',
     'Pest Control',
@@ -107,6 +111,20 @@ const knowledgeSlice = createSlice({
     clearKnowledgeError: (state) => {
       state.error = null
     },
+    setSelectedVariety: (state, action: PayloadAction<string | null>) => {
+      state.selectedVariety = action.payload
+    },
+    setSelectedVarieties: (state, action: PayloadAction<string[]>) => {
+      state.selectedVarieties = action.payload
+    },
+    addSelectedVariety: (state, action: PayloadAction<string>) => {
+      if (!state.selectedVarieties.includes(action.payload) && state.selectedVarieties.length < 3) {
+        state.selectedVarieties.push(action.payload)
+      }
+    },
+    removeSelectedVariety: (state, action: PayloadAction<string>) => {
+      state.selectedVarieties = state.selectedVarieties.filter(v => v !== action.payload)
+    },
   },
 })
 
@@ -120,6 +138,10 @@ export const {
   clearSearchHistory,
   setKnowledgeError,
   clearKnowledgeError,
+  setSelectedVariety,
+  setSelectedVarieties,
+  addSelectedVariety,
+  removeSelectedVariety,
 } = knowledgeSlice.actions
 
 export default knowledgeSlice.reducer

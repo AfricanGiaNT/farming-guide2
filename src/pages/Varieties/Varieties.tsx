@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import {
   Box,
@@ -23,14 +24,47 @@ import {
 import { useVarietyInformation } from '../../hooks/useCropRecommendations'
 import EnhancedVarietyDetailCard from '../../components/Varieties/CompactVarietyCard'
 import VarietyComparison from '../../components/Varieties/VarietyComparison'
+import { setSelectedCrop } from '../../store/slices/cropSlice'
+import { setSelectedVarieties, addSelectedVariety, removeSelectedVariety } from '../../store/slices/knowledgeSlice'
+import { RootState } from '../../store/store'
 
 const Varieties: React.FC = () => {
+  const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedCrop, setSelectedCrop] = useState(searchParams.get('crop') || '')
+  
+  // Get persisted state from Redux with safe defaults
+  const persistedCrop = useSelector((state: RootState) => (state.crop && state.crop.selectedCrop) || null)
+  const persistedVarieties = useSelector((state: RootState) => (state.knowledge && state.knowledge.selectedVarieties && Array.isArray(state.knowledge.selectedVarieties)) ? state.knowledge.selectedVarieties : [])
+  
+  // Initialize from URL params first, then Redux persisted state
+  const urlCrop = searchParams.get('crop') || ''
+  const [selectedCrop, setSelectedCropLocal] = useState(urlCrop || persistedCrop || '')
   const [locationInput, setLocationInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [compareMode, setCompareMode] = useState(false)
-  const [selectedVarieties, setSelectedVarieties] = useState<string[]>([])
+  const [selectedVarieties, setSelectedVarietiesLocal] = useState<string[]>(persistedVarieties || [])
+  
+  // Sync with Redux persisted state on mount and when it changes
+  useEffect(() => {
+    // If URL has a crop, use it and update Redux
+    if (urlCrop && urlCrop !== selectedCrop) {
+      setSelectedCropLocal(urlCrop)
+      dispatch(setSelectedCrop(urlCrop))
+    }
+    // If no URL crop but we have persisted crop, use it
+    else if (!urlCrop && persistedCrop && persistedCrop !== selectedCrop) {
+      setSelectedCropLocal(persistedCrop)
+    }
+    
+    // Sync varieties (safe check for undefined)
+    if (persistedVarieties && Array.isArray(persistedVarieties) && persistedVarieties.length > 0) {
+      const currentStr = JSON.stringify(selectedVarieties || [])
+      const persistedStr = JSON.stringify(persistedVarieties)
+      if (persistedStr !== currentStr) {
+        setSelectedVarietiesLocal(persistedVarieties)
+      }
+    }
+  }, [urlCrop, persistedCrop, persistedVarieties, dispatch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parse coordinates from URL params or location input
   const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined
@@ -73,22 +107,33 @@ const Varieties: React.FC = () => {
         newParams.set('crop', selectedCrop)
         return newParams
       })
+      // Update Redux when crop changes
+      dispatch(setSelectedCrop(selectedCrop))
     }
-  }, [selectedCrop, setSearchParams])
+  }, [selectedCrop, setSearchParams, dispatch])
 
   const handleCropSelect = (crop: string | null) => {
-    setSelectedCrop(crop || '')
+    const cropValue = crop || ''
+    setSelectedCropLocal(cropValue)
     setCompareMode(false)
-    setSelectedVarieties([])
+    setSelectedVarietiesLocal([])
+    dispatch(setSelectedCrop(cropValue))
+    dispatch(setSelectedVarieties([]))
   }
 
   const handleVarietySelect = (varietyName: string) => {
     if (compareMode) {
-      setSelectedVarieties(prev => {
+      setSelectedVarietiesLocal(prev => {
         if (prev.includes(varietyName)) {
-          return prev.filter(v => v !== varietyName)
+          const newList = prev.filter(v => v !== varietyName)
+          dispatch(setSelectedVarieties(newList))
+          dispatch(removeSelectedVariety(varietyName))
+          return newList
         } else if (prev.length < 3) {
-          return [...prev, varietyName]
+          const newList = [...prev, varietyName]
+          dispatch(setSelectedVarieties(newList))
+          dispatch(addSelectedVariety(varietyName))
+          return newList
         }
         return prev
       })
@@ -116,7 +161,7 @@ const Varieties: React.FC = () => {
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={4}>
               <Autocomplete
-                value={selectedCrop || null}
+                value={selectedCrop}
                 onChange={(_event, newValue) => handleCropSelect(newValue)}
                 options={cropOptions}
                 renderInput={(params) => (
@@ -236,7 +281,7 @@ const Varieties: React.FC = () => {
                   size="small"
                   variant="outlined"
                   onClick={() => {
-                    setSelectedCrop('Maize')
+                    handleCropSelect('maize')
                     setLocationInput('-13.9833, 33.7833')
                   }}
                 >
@@ -246,7 +291,7 @@ const Varieties: React.FC = () => {
                   size="small"
                   variant="outlined"
                   onClick={() => {
-                    setSelectedCrop('Groundnuts')
+                    handleCropSelect('groundnut')
                     setLocationInput('')
                   }}
                 >
@@ -256,7 +301,7 @@ const Varieties: React.FC = () => {
                   size="small"
                   variant="outlined"
                   onClick={() => {
-                    setSelectedCrop('Beans')
+                    handleCropSelect('phaseolus beans')
                     setLocationInput('-13.9833, 33.7833')
                   }}
                 >

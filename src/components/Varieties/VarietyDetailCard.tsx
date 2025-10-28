@@ -153,7 +153,11 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <BugIcon color="secondary" fontSize="small" />
                 <Typography variant="body2">
-                  <strong>Disease Resistance:</strong> {isSpecified(variety.disease_resistance) ? variety.disease_resistance : 'Standard'}
+                  <strong>Common diseases:</strong> {isSpecified(variety.disease_resistance) ? (
+                    typeof variety.disease_resistance === 'object' && 'items' in variety.disease_resistance
+                      ? variety.disease_resistance.items?.join(', ') || String(variety.disease_resistance)
+                      : String(variety.disease_resistance)
+                  ) : 'No specific information available'}
                 </Typography>
               </Box>
             </Grid>

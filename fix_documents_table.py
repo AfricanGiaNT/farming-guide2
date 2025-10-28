@@ -88,3 +88,5 @@ if __name__ == "__main__":
     else:
         print("\nFailed to fix database.")
         sys.exit(1)
+
+

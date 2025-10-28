@@ -82,6 +82,24 @@ interface VarietyDetailCardProps {
   cropName?: string
 }
 
+// Helper function to safely display object values
+const safeRenderValue = (value: any, fallback: string = 'Not specified'): string => {
+  if (value === null || value === undefined) return fallback;
+  
+  // Handle object with text property
+  if (typeof value === 'object' && value !== null && 'text' in value) {
+    return value.text || fallback;
+  }
+  
+  // Handle arrays by joining
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(', ') : fallback;
+  }
+  
+  // Return the value as string
+  return String(value);
+};
+
 const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
   variety,
   isSelected = false,
@@ -228,7 +246,7 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
                     Production Time
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {variety.maturity_days} days ({timeline.weeks} weeks)
+                    {safeRenderValue(variety.maturity_days, '120')} days ({safeRenderValue(timeline.weeks, '17')} weeks)
                   </Typography>
                 </Box>
               </Box>
@@ -241,8 +259,9 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
                     Yield Potential
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    {variety.yield_potential || variety.expected_yield_per_hectare ? 
-                      `${variety.expected_yield_per_hectare || 'High'} kg/ha` : 'Variable'}
+                    {safeRenderValue(variety.expected_yield_per_hectare) 
+                      ? `${safeRenderValue(variety.expected_yield_per_hectare)} kg/ha`
+                      : safeRenderValue(variety.yield_potential, 'Not specified')}
                   </Typography>
                 </Box>
               </Box>
@@ -260,7 +279,7 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <WaterIcon color="info" fontSize="small" />
                 <Typography variant="body2">
-                  <strong>Drought Tolerance:</strong> {variety.drought_tolerance || 'Standard'}
+                  <strong>Drought Tolerance:</strong> {safeRenderValue(variety.drought_tolerance, 'Standard')}
                 </Typography>
               </Box>
             </Grid>
@@ -268,7 +287,11 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <BugIcon color="warning" fontSize="small" />
                 <Typography variant="body2">
-                  <strong>Disease Resistance:</strong> {variety.disease_resistance || 'Standard'}
+                  <strong>Common diseases:</strong> {variety.disease_resistance ? (
+                    typeof variety.disease_resistance === 'object' && 'items' in variety.disease_resistance
+                      ? variety.disease_resistance.items?.join(', ') || safeRenderValue(variety.disease_resistance)
+                      : safeRenderValue(variety.disease_resistance)
+                  ) : 'No specific information available'}
                 </Typography>
               </Box>
             </Grid>
@@ -277,7 +300,7 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
                 <Box display="flex" alignItems="center" gap={1}>
                   <WaterIcon color="primary" fontSize="small" />
                   <Typography variant="body2">
-                    <strong>Rainfall:</strong> {variety.min_rainfall_mm || 0}-{variety.max_rainfall_mm || 0}mm
+                    <strong>Rainfall:</strong> {safeRenderValue(variety.min_rainfall_mm, '0')}-{safeRenderValue(variety.max_rainfall_mm, '0')}mm
                   </Typography>
                 </Box>
               </Grid>
@@ -305,8 +328,8 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
                       <Typography variant="h6">{phase.icon}</Typography>
                     </ListItemIcon>
                     <ListItemText
-                      primary={phase.activity}
-                      secondary={phase.week}
+                      primary={safeRenderValue(phase.activity)}
+                      secondary={safeRenderValue(phase.week)}
                     />
                   </ListItem>
                 ))}
@@ -330,7 +353,7 @@ const VarietyDetailCard: React.FC<VarietyDetailCardProps> = ({
                           <ListItemIcon>
                             <CheckIcon color="success" fontSize="small" />
                           </ListItemIcon>
-                          <ListItemText primary={item} />
+                          <ListItemText primary={safeRenderValue(item)} />
                         </ListItem>
                       ))}
                     </List>

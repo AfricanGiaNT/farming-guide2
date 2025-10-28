@@ -19,6 +19,27 @@ class SupabaseVarietiesAPI:
     
     def __init__(self):
         self.supabase = get_supabase_client()
+        self._reconnect_attempts = 0
+        self._max_reconnect_attempts = 3
+    
+    def _ensure_connection(self):
+        """Ensure Supabase connection is active, reconnect if needed"""
+        try:
+            # Simple health check - try to query crops table
+            self.supabase.table("crops").select("id").limit(1).execute()
+            self._reconnect_attempts = 0  # Reset on success
+        except Exception as e:
+            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
+                print(f"⚠️ Supabase connection issue detected: {e}")
+                if self._reconnect_attempts < self._max_reconnect_attempts:
+                    self._reconnect_attempts += 1
+                    print(f"🔄 Reconnecting to Supabase (attempt {self._reconnect_attempts}/{self._max_reconnect_attempts})...")
+                    self.supabase = get_supabase_client()
+                else:
+                    print(f"❌ Max reconnection attempts reached")
+                    raise
+            else:
+                raise
     
     def get_crops(self):
         """Get all crops"""
@@ -32,6 +53,7 @@ class SupabaseVarietiesAPI:
     def get_crop_by_name(self, crop_name: str):
         """Get crop by name"""
         try:
+            self._ensure_connection()
             result = self.supabase.table("crops").select("*").eq("crop_name", crop_name).execute()
             return result.data[0] if result.data else None
         except Exception as e:
@@ -39,15 +61,61 @@ class SupabaseVarietiesAPI:
             return None
     
     def get_varieties_by_crop(self, crop_name: str):
-        """Get varieties for a specific crop"""
+        """Get varieties for a specific crop - tries multiple name variants"""
         try:
-            # First get the crop ID
+            self._ensure_connection()
+            # Try the given crop name first
             crop = self.get_crop_by_name(crop_name)
+            
+            # If not found, try common variants
             if not crop:
+                # Common name variants to try as fallbacks
+                variant_map = {
+                    'beans': ['phaseolus beans', 'phaseolus-beans', 'phaseolus_beans'],
+                    'phaseolus beans': ['beans', 'phaseolus-beans', 'phaseolus_beans'],
+                    'phaseolus-beans': ['beans', 'phaseolus beans', 'phaseolus_beans'],
+                    'groundnuts': ['groundnut'],
+                    'groundnut': ['groundnuts'],
+                }
+                
+                crop_lower = crop_name.lower()
+                if crop_lower in variant_map:
+                    for variant in variant_map[crop_lower]:
+                        crop = self.get_crop_by_name(variant)
+                        if crop:
+                            print(f"✅ Found crop '{variant}' instead of '{crop_name}'")
+                            break
+                else:
+                    # Try a few common variations for any crop name
+                    # Remove spaces, add spaces, etc.
+                    alt_names = [
+                        crop_name.replace(' ', '_'),
+                        crop_name.replace('_', ' '),
+                        crop_name.replace('-', ' '),
+                        crop_name.replace(' ', '-'),
+                    ]
+                    for alt in set(alt_names):  # Use set to avoid duplicates
+                        if alt.lower() != crop_lower:
+                            crop = self.get_crop_by_name(alt)
+                            if crop:
+                                print(f"✅ Found crop '{alt}' instead of '{crop_name}'")
+                                break
+            
+            if not crop:
+                print(f"No crop found for '{crop_name}' (tried variants)")
                 return []
             
             # Get varieties for this crop
-            result = self.supabase.table("varieties").select("*").eq("crop_id", crop["id"]).execute()
+            self._ensure_connection()
+            crop_id = crop.get("id")
+            if not crop_id:
+                print(f"⚠️ Crop found but has no ID: {crop}")
+                return []
+            
+            print(f"🔍 Querying varieties for crop_id={crop_id}, crop_name='{crop.get('crop_name', 'unknown')}'")
+            result = self.supabase.table("varieties").select("*").eq("crop_id", crop_id).execute()
+            varieties_count = len(result.data) if result.data else 0
+            print(f"✅ Found {varieties_count} varieties for crop '{crop.get('crop_name', 'unknown')}'")
             return result.data
         except Exception as e:
             print(f"Error fetching varieties for {crop_name}: {e}")

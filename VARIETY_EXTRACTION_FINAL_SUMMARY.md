@@ -82,3 +82,5 @@
 **Result**: 14 high-quality, validated crop varieties ready for use in the farming guide application, with correct crop assignments and clean data.
 
 
+
+

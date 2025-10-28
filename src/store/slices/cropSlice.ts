@@ -59,6 +59,8 @@ interface PlantingCalendar {
 interface CropState {
   recommendations: CropRecommendation[]
   selectedSeason: 'current' | 'rainy' | 'dry' | 'all'
+  selectedCrop: string | null // UI state: currently viewing crop (for varieties page)
+  searchedCrop: string | null // UI state: searched crop in crops page
   plantingCalendar: PlantingCalendar | null
   varietyDetails: {
     [cropName: string]: {
@@ -75,6 +77,8 @@ interface CropState {
 const initialState: CropState = {
   recommendations: [],
   selectedSeason: 'current',
+  selectedCrop: null,
+  searchedCrop: null,
   plantingCalendar: null,
   varietyDetails: {},
   loading: false,
@@ -117,6 +121,12 @@ const cropSlice = createSlice({
     setLastLocation: (state, action: PayloadAction<{ lat: number; lon: number }>) => {
       state.lastLocation = action.payload
     },
+    setSelectedCrop: (state, action: PayloadAction<string | null>) => {
+      state.selectedCrop = action.payload
+    },
+    setSearchedCrop: (state, action: PayloadAction<string | null>) => {
+      state.searchedCrop = action.payload
+    },
   },
 })
 
@@ -129,6 +139,8 @@ export const {
   setCropError,
   clearCropError,
   setLastLocation,
+  setSelectedCrop,
+  setSearchedCrop,
 } = cropSlice.actions
 
 export default cropSlice.reducer

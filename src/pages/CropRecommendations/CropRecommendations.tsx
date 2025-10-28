@@ -29,7 +29,7 @@ import {
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material'
 import { RootState } from '../../store/store'
-import { setCropRecommendations } from '../../store/slices/cropSlice'
+import { setCropRecommendations, setSearchedCrop } from '../../store/slices/cropSlice'
 import { useCropRecommendations } from '../../hooks/useCropRecommendations'
 import { useSpecificCropRecommendations } from '../../hooks/useSpecificCropRecommendations'
 import CropRecommendationCard from '../../components/Crops/CropRecommendationCard'
@@ -43,6 +43,7 @@ const CropRecommendations: React.FC = () => {
   const dispatch = useDispatch()
   const { location } = useSelector((state: RootState) => state.user)
   const { recommendations, loading, error } = useSelector((state: RootState) => state.crop)
+  const persistedSearchCrop = useSelector((state: RootState) => (state.crop && state.crop.searchedCrop) || '')
   
   const [currentLocation, setCurrentLocation] = useState({
     lat: location?.lat || -13.9833,
@@ -56,9 +57,16 @@ const CropRecommendations: React.FC = () => {
   })
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-  const [searchCrop, setSearchCrop] = useState<string>('')
+  const [searchCrop, setSearchCrop] = useState<string>(persistedSearchCrop || '')
   const [processedData, setProcessedData] = useState<any>(null)
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'enhanced' | 'fallback'>('idle')
+  
+  // Restore persisted crop selection on mount
+  useEffect(() => {
+    if (persistedSearchCrop && persistedSearchCrop !== searchCrop) {
+      setSearchCrop(persistedSearchCrop)
+    }
+  }, [persistedSearchCrop]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: cropData, isLoading, error: apiError, refetch } = useCropRecommendations(
     currentLocation.lat,
@@ -138,10 +146,12 @@ const CropRecommendations: React.FC = () => {
 
   const handleCropSearch = (cropName: string) => {
     setSearchCrop(cropName)
+    dispatch(setSearchedCrop(cropName))
   }
 
   const handleCropSearchClear = () => {
     setSearchCrop('')
+    dispatch(setSearchedCrop(''))
     // Trigger refresh of general recommendations when clearing search
     refetch()
   }

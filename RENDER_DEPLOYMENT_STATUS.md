@@ -47,10 +47,11 @@ The service is deploying, but you **must** add these environment variables in th
 
 ## 📊 Current Deployment
 
-- **Deployment ID**: dep-d40bbreuk2gs739uq3o0
-- **Status**: Build in progress
-- **Trigger**: API (environment variable update)
-- **Commit**: 5036fed (latest from main branch)
+- **Latest Deployment**: dep-d40bd46uk2gs739ur5tg (in progress after pushing to main)
+- **Previous Failed**: dep-d40bbreuk2gs739uq3o0 (build.sh was missing)
+- **Status**: Auto-deploy triggered from main branch
+- **Commit**: 13e6b00 (Add unified deployment configuration)
+- **Note**: Code has been pushed to main branch, deployment should succeed now
 
 ## 🔍 Next Steps
 

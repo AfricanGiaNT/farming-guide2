@@ -112,3 +112,5 @@ The original automated extraction was producing **80-90% garbage data** includin
 **Result: 7 high-quality, validated crop varieties ready for use in the farming guide application.**
 
 
+
+

@@ -82,3 +82,5 @@ export const useVarietyInformation = (cropName: string, lat?: number, lon?: numb
 3. **Localization Support**: Add support for crop names in multiple languages
 4. **Alias System**: Expand to support multiple aliases for each crop
 5. **Admin Interface**: Create an admin interface to manage crop name mappings
+
+

@@ -1,5 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import DiseaseResistanceDisplay from './DiseaseResistanceDisplay'
+import PestDiseaseManagement from './PestDiseaseManagement'
 import {
   Card,
   CardContent,
@@ -25,7 +27,7 @@ import { createSlug } from '../../utils/slugUtils'
 interface Variety {
   name: string
   maturity_days: number
-  yield_potential: string
+  yield_potential: string | { text: string; level?: string } // Can be string or object
   drought_tolerance: string
   disease_resistance: string
   planting_time: string
@@ -48,7 +50,7 @@ interface Variety {
   harvesting_guidelines?: string
   storage_requirements?: string
   seed_rate_per_hectare?: number
-  expected_yield_per_hectare?: number
+  expected_yield_per_hectare?: number | { text: string; level?: string }
   market_preference?: string
   seed_availability?: string
   cost_per_kg?: number
@@ -62,6 +64,24 @@ interface CompactVarietyCardProps {
   locationSpecific?: boolean
   cropName?: string
 }
+
+// Helper function to safely display object values
+const safeRenderValue = (value: any, fallback: string = 'Not specified'): string => {
+  if (value === null || value === undefined) return fallback;
+  
+  // Handle object with text property
+  if (typeof value === 'object' && value !== null && 'text' in value) {
+    return value.text || fallback;
+  }
+  
+  // Handle arrays by joining
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(', ') : fallback;
+  }
+  
+  // Return the value as string
+  return String(value);
+};
 
 const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
   variety,
@@ -80,13 +100,7 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
     const cropSlug = createSlug(cropName)
     const url = `/varieties/${cropSlug}/${varietySlug}`
     
-    console.log('🔍 CompactVarietyCard - Navigation debug:', {
-      varietyName: variety.name,
-      varietySlug,
-      cropName,
-      cropSlug,
-      url
-    })
+    console.log('🔍 CompactVarietyCard - Navigating to:', url)
     
     navigate(url)
   }
@@ -109,13 +123,17 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
     >
       {compareMode && (
         <IconButton
-          onClick={onSelect}
+          onClick={(e) => {
+            e.stopPropagation() // Stop card click when clicking compare button
+            onSelect?.()
+          }}
           sx={{
             position: 'absolute',
             top: 8,
             right: 8,
             bgcolor: isSelected ? 'primary.main' : 'background.paper',
             color: isSelected ? 'white' : 'text.secondary',
+            zIndex: 10,
             '&:hover': {
               bgcolor: isSelected ? 'primary.dark' : 'action.hover',
             }
@@ -165,7 +183,7 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
                     Maturity
                   </Typography>
                   <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
-                    {variety.maturity_days} days
+                    {safeRenderValue(variety.maturity_days, '120')} days
                   </Typography>
                 </Box>
               </Box>
@@ -178,7 +196,20 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
                     Yield
                   </Typography>
                   <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
-                    {variety.yield_potential || 'High'}
+                    {(() => {
+                      // Check yield_potential first (can be object with {text, level})
+                      if (variety.yield_potential) {
+                        const yieldStr = safeRenderValue(variety.yield_potential, '')
+                        if (yieldStr && yieldStr !== 'Not specified') {
+                          return yieldStr.includes('kg/ha') ? yieldStr : `${yieldStr} kg/ha`
+                        }
+                      }
+                      // Fallback to expected_yield_per_hectare
+                      if (variety.expected_yield_per_hectare) {
+                        return `${safeRenderValue(variety.expected_yield_per_hectare)} kg/ha`
+                      }
+                      return 'Not specified'
+                    })()}
                   </Typography>
                 </Box>
               </Box>
@@ -188,10 +219,12 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
                 <WaterIcon color="info" fontSize="small" />
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    Drought
+                    Rainfall
                   </Typography>
                   <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
-                    {variety.drought_tolerance || 'Moderate'}
+                    {variety.min_rainfall_mm && variety.max_rainfall_mm
+                      ? `${safeRenderValue(variety.min_rainfall_mm)}-${safeRenderValue(variety.max_rainfall_mm)} mm`
+                      : safeRenderValue(variety.drought_tolerance, 'Moderate')}
                   </Typography>
                 </Box>
               </Box>
@@ -200,12 +233,11 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
               <Box display="flex" alignItems="center" gap={0.5}>
                 <BugIcon color="warning" fontSize="small" />
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                    Disease
-                  </Typography>
-                  <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
-                    {variety.disease_resistance || 'Good'}
-                  </Typography>
+                  <PestDiseaseManagement
+                    pestManagement={variety.pest_management}
+                    diseaseManagement={variety.disease_management}
+                    compact={true}
+                  />
                 </Box>
               </Box>
             </Grid>
@@ -215,7 +247,7 @@ const CompactVarietyCard: React.FC<CompactVarietyCardProps> = ({
         {/* Key Info */}
         <Box mb={1.5}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-            {variety.description || 'A productive variety suitable for various growing conditions.'}
+            {safeRenderValue(variety.description, 'A productive variety suitable for various growing conditions.')}
           </Typography>
         </Box>
 

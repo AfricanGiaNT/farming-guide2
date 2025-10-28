@@ -86,6 +86,23 @@ const MonthlyRainfallTable: React.FC<MonthlyRainfallTableProps> = ({
     )
   }
 
+  // Reject any mock data - only show real data
+  if (historical.mock_data === true) {
+    return (
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography variant="h6" color="error">
+          Mock Data Detected
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          This system only displays real historical weather data.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Please ensure your API configuration is correct and try again.
+        </Typography>
+      </Box>
+    )
+  }
+
   if (!historical.monthly_averages) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>

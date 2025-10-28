@@ -1,13 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { store } from './store/store'
+import { Box, CircularProgress } from '@mui/material'
+import { store, persistor } from './store/store'
 import App from './App'
 import { registerSW } from './utils/serviceWorker'
+import { clearExpiredCache } from './utils/persistentStorage'
 
 // Create Material-UI theme with agricultural colors
 const theme = createTheme({
@@ -82,12 +85,12 @@ const theme = createTheme({
   },
 })
 
-// Create React Query client
+// Create React Query client with extended cache time to match redux-persist
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: 12 * 60 * 60 * 1000, // 12 hours - matches redux-persist cache
+      cacheTime: 12 * 60 * 60 * 1000, // 12 hours
       retry: 2,
       refetchOnWindowFocus: false,
     },
@@ -97,17 +100,44 @@ const queryClient = new QueryClient({
 // Register service worker for PWA functionality
 registerSW()
 
+// Clear expired cache on app start
+clearExpiredCache()
+
+// Debug: Inspect cache on startup (remove in production)
+if (process.env.NODE_ENV === 'development') {
+  import('./utils/cacheDebug').then(({ inspectCache }) => {
+    setTimeout(() => inspectCache(), 2000) // Wait for rehydration
+  })
+}
+
+// Loading component for PersistGate
+const PersistLoading = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    minHeight="100vh"
+    flexDirection="column"
+    gap={2}
+  >
+    <CircularProgress size={40} />
+    <Box color="text.secondary">Loading your data...</Box>
+  </Box>
+)
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <App />
-          </ThemeProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
+      <PersistGate loading={<PersistLoading />} persistor={persistor}>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <App />
+            </ThemeProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </PersistGate>
     </Provider>
   </React.StrictMode>,
 )

@@ -25,7 +25,7 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material'
 import { adminAPI, ExtractedVariety, VarietyExtractionParams, VarietyExtractionResult, VarietyValidationResult } from '../../services/api'
-import VarietyValidationModal from './VarietyValidationModal'
+import VarietyValidationModal from '../../components/Admin/VarietyValidationModal'
 
 const cropOptions = [
   'Maize',

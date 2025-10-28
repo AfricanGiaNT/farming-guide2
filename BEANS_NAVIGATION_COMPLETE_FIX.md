@@ -65,3 +65,5 @@ Now when users click on beans varieties:
 4. ✅ Both mobile and desktop detail pages work correctly
 
 The fix should resolve the "Unable to load variety details" error for beans varieties and any other varieties with special characters in their names.
+
+

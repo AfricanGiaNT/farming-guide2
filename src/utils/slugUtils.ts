@@ -19,3 +19,5 @@ export const createSlug = (name: string): string => {
 export const slugToDisplayName = (slug: string): string => {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
+
+

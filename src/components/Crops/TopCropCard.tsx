@@ -120,7 +120,6 @@ const TopCropCard: React.FC<TopCropCardProps> = ({
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: rank * 0.1 }}

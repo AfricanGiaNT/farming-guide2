@@ -15,3 +15,5 @@ const ResponsiveVarietyDetail: React.FC = () => {
 }
 
 export default ResponsiveVarietyDetail
+
+
