@@ -8,7 +8,6 @@ export const cropNameMap: Record<string, string> = {
   'phaseolus beans': 'beans',
   'phaseolus-beans': 'beans', // Add URL slug version
   'soyabean': 'soybean',
-  'soyabean': 'soybean', // Add URL slug version
   'sweet potato': 'sweet_potato',
   'sweet-potato': 'sweet_potato', // Add URL slug version
   'leafy vegetables': 'leafy_vegetables',

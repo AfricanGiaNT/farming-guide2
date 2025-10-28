@@ -13,7 +13,7 @@ import {
   InputAdornment,
   IconButton
 } from '@mui/material'
-import { Search, BookOpen, FilterList } from '@mui/icons-material'
+import { Search, MenuBook, FilterList } from '@mui/icons-material'
 import { knowledgeAPI } from '../../services/api'
 
 interface SearchResult {
@@ -139,7 +139,7 @@ const KnowledgeBase: React.FC = () => {
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <BookOpen fontSize="small" color="primary" />
+                      <MenuBook fontSize="small" color="primary" />
                       <Typography variant="subtitle2" color="primary">
                         {result.category}
                       </Typography>
@@ -176,7 +176,7 @@ const KnowledgeBase: React.FC = () => {
       {searchResults.length === 0 && !loading && searchQuery && (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <BookOpen sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <MenuBook sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
               No results found
             </Typography>
@@ -191,7 +191,7 @@ const KnowledgeBase: React.FC = () => {
       {searchResults.length === 0 && !searchQuery && (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <BookOpen sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+            <MenuBook sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
               Welcome to the Knowledge Base
             </Typography>
