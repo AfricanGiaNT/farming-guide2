@@ -2376,6 +2376,8 @@ DIST_DIR = Path(__file__).parent / 'dist'
 
 def register_frontend_routes():
     """Register frontend serving routes - must be called after all API routes"""
+    import mimetypes
+    
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_frontend(path):
@@ -2384,19 +2386,77 @@ def register_frontend_routes():
         if path.startswith('api/'):
             return jsonify({'error': 'API route not found'}), 404
         
+        # Debug logging
+        print(f"[FRONTEND] Serving path: {path}")
+        print(f"[FRONTEND] DIST_DIR exists: {DIST_DIR.exists()}")
+        
+        # Handle assets subdirectory (common in Vite builds)
+        if path.startswith('assets/'):
+            # Extract just the filename from assets/filename.ext
+            asset_filename = path.replace('assets/', '')
+            # Try to find in dist/assets/
+            assets_dir = DIST_DIR / 'assets'
+            file_path = assets_dir / asset_filename
+            
+            print(f"[FRONTEND] Checking asset: {file_path}")
+            print(f"[FRONTEND] Asset exists: {file_path.exists()}")
+            
+            if file_path.exists():
+                # Set proper MIME type for JS and CSS files
+                mimetype = None
+                if path.endswith('.js'):
+                    mimetype = 'application/javascript'
+                elif path.endswith('.css'):
+                    mimetype = 'text/css'
+                elif path.endswith('.json'):
+                    mimetype = 'application/json'
+                elif path.endswith('.woff2'):
+                    mimetype = 'font/woff2'
+                elif path.endswith('.woff'):
+                    mimetype = 'font/woff'
+                elif path.endswith('.ttf'):
+                    mimetype = 'font/ttf'
+                
+                print(f"[FRONTEND] Serving asset {path} with mimetype: {mimetype}")
+                return send_from_directory(str(assets_dir), asset_filename, mimetype=mimetype)
+        
         # Check if the file exists in dist directory
-        if path and DIST_DIR.joinpath(path).exists():
-            return send_from_directory(str(DIST_DIR), path)
+        if path:
+            file_path = DIST_DIR.joinpath(path)
+            print(f"[FRONTEND] Checking file: {file_path}")
+            print(f"[FRONTEND] File exists: {file_path.exists()}")
+            
+            if file_path.exists():
+                # Set proper MIME type for JS and CSS files
+                mimetype = None
+                if path.endswith('.js'):
+                    mimetype = 'application/javascript'
+                elif path.endswith('.css'):
+                    mimetype = 'text/css'
+                elif path.endswith('.json'):
+                    mimetype = 'application/json'
+                elif path.endswith('.woff2'):
+                    mimetype = 'font/woff2'
+                elif path.endswith('.woff'):
+                    mimetype = 'font/woff'
+                elif path.endswith('.ttf'):
+                    mimetype = 'font/ttf'
+                
+                print(f"[FRONTEND] Serving {path} with mimetype: {mimetype}")
+                return send_from_directory(str(DIST_DIR), path, mimetype=mimetype)
         
         # For SPA routing, serve index.html for all non-API routes
-        if DIST_DIR.joinpath('index.html').exists():
+        index_path = DIST_DIR.joinpath('index.html')
+        print(f"[FRONTEND] Serving index.html: {index_path.exists()}")
+        if index_path.exists():
             return send_from_directory(str(DIST_DIR), 'index.html')
         
         # If dist doesn't exist (development), return a helpful message
         return jsonify({
             'message': 'Frontend not built. Please run: npm run build',
             'path': path,
-            'dist_exists': DIST_DIR.exists()
+            'dist_exists': DIST_DIR.exists(),
+            'dist_contents': list(DIST_DIR.iterdir()) if DIST_DIR.exists() else []
         }), 503
 
 # Register frontend routes after all API routes
