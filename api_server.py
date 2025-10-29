@@ -793,9 +793,12 @@ def get_variety_information(crop_name):
         limit = min(max(limit, 1), 20)  # Clamp between 1 and 20
         
         # First, try to get varieties from Supabase
+        print(f"🔍 API Server - Checking Supabase handler for {crop_name}")
+        print(f"   supabase_varieties_handler available: {supabase_varieties_handler is not None}")
         if supabase_varieties_handler:
             try:
                 # Get varieties from Supabase
+                print(f"🔍 API Server - Fetching from Supabase for {crop_name}")
                 result = supabase_varieties_handler.get_varieties_by_crop(crop_name, limit)
                 
                 print(f"🔍 API Server - Handler result for {crop_name}:")
@@ -975,16 +978,22 @@ def get_variety_information(crop_name):
         if lat and lon:
             search_query += f" location {lat} {lon}"
         
-        search_results = varieties_handler.search_varieties_knowledge(search_query, top_k=10)
+        try:
+            search_results = varieties_handler.search_varieties_knowledge(search_query, top_k=10)
+        except Exception as e:
+            print(f"Error searching knowledge base: {e}")
+            search_results = []
         
         if not search_results:
+            # Return 200 with empty array instead of 404
             return jsonify({
                 'crop': crop_name,
-                'error': 'No variety information found',
-                'real_data': True,
-                'timestamp': datetime.now().isoformat(),
-                'varieties': []
-            }), 404
+                'total_found': 0,
+                'varieties': [],
+                'data_source': 'none',
+                'error': 'No variety information found in any source',
+                'timestamp': datetime.now().isoformat()
+            }), 200
         
         # Parse varieties with AI directly from search results using requested limit
         ai_parsed_info = varieties_handler.parse_varieties_with_ai(search_results, crop_name, max_varieties=limit)
