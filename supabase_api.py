@@ -12,7 +12,21 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 def get_supabase_client() -> Client:
     """Get Supabase client instance"""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    try:
+        # Try to get from environment first (for Render deployment)
+        url = os.getenv('SUPABASE_URL', SUPABASE_URL)
+        key = os.getenv('SUPABASE_KEY', SUPABASE_KEY)
+        return create_client(url, key)
+    except TypeError as e:
+        # Handle version compatibility issues
+        if 'proxy' in str(e).lower() or 'unexpected keyword' in str(e).lower():
+            # Try without any additional parameters
+            from supabase import create_client as create_supabase_client
+            return create_supabase_client(url, key)
+        raise
+    except Exception as e:
+        print(f"⚠️ Error creating Supabase client: {e}")
+        raise
 
 class SupabaseVarietiesAPI:
     """API for varieties using Supabase"""

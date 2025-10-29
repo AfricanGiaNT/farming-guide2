@@ -131,10 +131,38 @@ def initialize_components():
         
     # Initialize Supabase varieties handler
     try:
-        supabase_varieties_handler = VarietiesSupabaseHandler()
-        print("[OK] Supabase varieties handler initialized")
+        # Check if Supabase credentials are available
+        supabase_url = os.environ.get('SUPABASE_URL')
+        supabase_key = os.environ.get('SUPABASE_KEY') or os.environ.get('SUPABASE_SECRET_API')
+        
+        if not supabase_url or not supabase_key:
+            # Try to load from config file
+            config_path = Path(__file__).parent / "config" / "Supabase.env"
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            env_key = key.strip()
+                            env_value = value.strip()
+                            os.environ[env_key] = env_value
+                            if env_key == 'SUPABASE_URL':
+                                supabase_url = env_value
+                            elif env_key in ['SUPABASE_KEY', 'SUPABASE_SECRET_API']:
+                                supabase_key = env_value
+        
+        if supabase_url and supabase_key:
+            supabase_varieties_handler = VarietiesSupabaseHandler()
+            print("[OK] Supabase varieties handler initialized")
+        else:
+            print("[WARN] Supabase credentials not found. Set SUPABASE_URL and SUPABASE_KEY environment variables.")
+            supabase_varieties_handler = None
     except Exception as e:
         print(f"[WARN] Supabase varieties handler initialization failed: {e}")
+        print(f"[WARN] Error type: {type(e).__name__}")
+        import traceback
+        print(f"[WARN] Traceback: {traceback.format_exc()}")
         supabase_varieties_handler = None
     
     # For other components, keep using mock data to avoid other import issues
