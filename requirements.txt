@@ -1,8 +1,8 @@
 # Agricultural Advisor Bot - Python Dependencies
 # Week 1 MVP Requirements
 
-# Telegram Bot
-python-telegram-bot==20.7
+# Telegram Bot (v21+ supports httpx>=0.26, compatible with supabase)
+python-telegram-bot>=21.0
 
 # HTTP Requests
 requests==2.31.0
@@ -47,10 +47,9 @@ PyPDF2
 pytest
 python-dateutil==2.8.2
 python-dotenv==1.0.0
-python-telegram-bot==20.7
 requests==2.31.0
 sqlalchemy
-# Supabase - use version compatible with httpx 0.25.x (required by python-telegram-bot)
+# Supabase - now compatible with python-telegram-bot 21+ (both support httpx>=0.26)
 supabase==2.7.4
 telegram
 tiktoken
