@@ -131,38 +131,54 @@ def initialize_components():
         
     # Initialize Supabase varieties handler
     try:
-        # Check if Supabase credentials are available
-        supabase_url = os.environ.get('SUPABASE_URL')
-        supabase_key = os.environ.get('SUPABASE_KEY') or os.environ.get('SUPABASE_SECRET_API')
+        # First, try to load from config file
+        config_path = Path(__file__).parent / "config" / "Supabase.env"
+        if config_path.exists():
+            print(f"[INFO] Loading Supabase config from: {config_path}")
+            with open(config_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        env_key = key.strip()
+                        env_value = value.strip()
+                        os.environ[env_key] = env_value
+                        print(f"[INFO] Loaded {env_key} from config file")
         
-        if not supabase_url or not supabase_key:
-            # Try to load from config file
-            config_path = Path(__file__).parent / "config" / "Supabase.env"
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            key, value = line.split('=', 1)
-                            env_key = key.strip()
-                            env_value = value.strip()
-                            os.environ[env_key] = env_value
-                            if env_key == 'SUPABASE_URL':
-                                supabase_url = env_value
-                            elif env_key in ['SUPABASE_KEY', 'SUPABASE_SECRET_API']:
-                                supabase_key = env_value
+        # Check if Supabase credentials are available (from env vars or config file)
+        supabase_url = os.environ.get('SUPABASE_URL')
+        # Try multiple possible key names
+        supabase_key = (os.environ.get('SUPABASE_KEY') or 
+                       os.environ.get('SUPABASE_SECRET_API') or
+                       os.environ.get('SUPABASE_PUBLISHABLE'))
+        
+        if supabase_url:
+            print(f"[INFO] Supabase URL found: {supabase_url[:30]}...")
+        else:
+            print("[WARN] SUPABASE_URL not found")
+            
+        if supabase_key:
+            print(f"[INFO] Supabase KEY found: {supabase_key[:20]}...")
+        else:
+            print("[WARN] SUPABASE_KEY/SUPABASE_SECRET_API not found")
         
         if supabase_url and supabase_key:
+            print("[INFO] Initializing Supabase varieties handler...")
             supabase_varieties_handler = VarietiesSupabaseHandler()
-            print("[OK] Supabase varieties handler initialized")
+            print("[OK] Supabase varieties handler initialized successfully!")
         else:
-            print("[WARN] Supabase credentials not found. Set SUPABASE_URL and SUPABASE_KEY environment variables.")
+            print("[ERROR] Supabase credentials incomplete. Missing:")
+            if not supabase_url:
+                print("[ERROR]   - SUPABASE_URL")
+            if not supabase_key:
+                print("[ERROR]   - SUPABASE_KEY or SUPABASE_SECRET_API")
             supabase_varieties_handler = None
     except Exception as e:
-        print(f"[WARN] Supabase varieties handler initialization failed: {e}")
-        print(f"[WARN] Error type: {type(e).__name__}")
+        print(f"[ERROR] Supabase varieties handler initialization failed: {e}")
+        print(f"[ERROR] Error type: {type(e).__name__}")
         import traceback
-        print(f"[WARN] Traceback: {traceback.format_exc()}")
+        print(f"[ERROR] Traceback:")
+        traceback.print_exc()
         supabase_varieties_handler = None
     
     # For other components, keep using mock data to avoid other import issues
