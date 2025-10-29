@@ -65,24 +65,24 @@ api.interceptors.response.use(
 // Weather API endpoints
 export const weatherAPI = {
   getCurrentWeather: async (lat: number, lon: number) => {
-    const response = await api.get(`/api/weather/${lat},${lon}`)
+    const response = await api.get(`/weather/${lat},${lon}`)
     return response.data
   },
 
   getWeatherForecast: async (lat: number, lon: number) => {
-    const response = await api.get(`/api/weather/${lat},${lon}`)
+    const response = await api.get(`/weather/${lat},${lon}`)
     return response.data
   },
 
   getRainfallData: async (lat: number, lon: number) => {
-    const response = await api.get(`/api/weather/${lat},${lon}`)
+    const response = await api.get(`/weather/${lat},${lon}`)
     return response.data
   },
 
   getHistoricalWeather: async (lat: number, lon: number, yearsOrList: number | number[] = 5) => {
     console.log('🌐 API - Fetching historical weather for:', { lat, lon, yearsOrList })
     try {
-      let url = `/api/weather/${lat},${lon}/historical`
+      let url = `/weather/${lat},${lon}/historical`
       if (Array.isArray(yearsOrList)) {
         const csv = yearsOrList.join(',')
         url += `?years_list=${csv}`
@@ -103,7 +103,7 @@ export const weatherAPI = {
   getAgriculturalRecommendations: async (lat: number, lon: number, years: number = 3) => {
     console.log('🌐 API - Fetching agricultural recommendations for:', { lat, lon, years })
     try {
-      const url = `/api/weather/${lat},${lon}/agricultural-recommendations?years=${years}`
+      const url = `/weather/${lat},${lon}/agricultural-recommendations?years=${years}`
       const response = await api.get(url)
       console.log('🌐 API - Agricultural recommendations response:', response.data)
       return response.data
@@ -121,7 +121,7 @@ export const cropAPI = {
     lon: number, 
     season: 'current' | 'rainy' | 'dry' | 'all' = 'current'
   ) => {
-    const response = await api.get(`/api/crops?location=${lat},${lon}&season=${season}`)
+    const response = await api.get(`/crops?location=${lat},${lon}&season=${season}`)
     return response.data
   },
 
@@ -131,7 +131,7 @@ export const cropAPI = {
     lon: number,
     season: 'current' | 'rainy' | 'dry' | 'all' = 'current'
   ) => {
-    const response = await api.get(`/api/crops/specific?crop=${cropName}&location=${lat},${lon}&season=${season}`)
+    const response = await api.get(`/crops/specific?crop=${cropName}&location=${lat},${lon}&season=${season}`)
     return response.data
   },
 
@@ -142,7 +142,7 @@ export const cropAPI = {
       params.append('lon', lon.toString())
     }
     const queryString = params.toString()
-    const url = `/api/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
+    const url = `/varieties/${cropName}${queryString ? `?${queryString}` : ''}`
     console.log('🌱 API - Fetching variety information for:', { cropName, lat, lon, url })
     try {
       const response = await api.get(url)
