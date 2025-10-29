@@ -94,22 +94,25 @@ const Varieties: React.FC = () => {
     return null
   }
 
-  useEffect(() => {
-    // Only update URL if selectedCrop differs from URL param to avoid infinite loop
-    const currentUrlCrop = searchParams.get('crop')
-    if (selectedCrop && selectedCrop !== currentUrlCrop) {
-      setSearchParams(prev => {
-        const newParams = new URLSearchParams(prev)
-        newParams.set('crop', selectedCrop)
-        return newParams
-      }, { replace: true }) // Use replace to avoid adding to history stack
-    }
-  }, [selectedCrop]) // Removed setSearchParams from deps to prevent loops
+  // REMOVED: useEffect that auto-updates URL when selectedCrop changes
+  // This was causing infinite loops. URL should only update from explicit user actions.
 
   const handleCropSelect = (crop: string | null) => {
-    setSelectedCrop(crop || '')
+    const cropValue = crop || ''
+    setSelectedCrop(cropValue)
     setCompareMode(false)
     setSelectedVarieties([])
+    
+    // Update URL directly from user action (not from useEffect)
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (cropValue) {
+        newParams.set('crop', cropValue)
+      } else {
+        newParams.delete('crop')
+      }
+      return newParams
+    }, { replace: true })
   }
 
   const handleVarietySelect = (varietyName: string) => {

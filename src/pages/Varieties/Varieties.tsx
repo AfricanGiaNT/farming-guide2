@@ -44,16 +44,27 @@ const Varieties: React.FC = () => {
   const [compareMode, setCompareMode] = useState(false)
   const [selectedVarieties, setSelectedVarietiesLocal] = useState<string[]>(persistedVarieties || [])
   
-  // Sync with Redux persisted state on mount and when it changes
+  // Sync FROM URL/Redux TO state only (one-way sync to prevent loops)
   useEffect(() => {
-    // If URL has a crop, use it and update Redux
+    // URL is the source of truth - if URL has crop, use it
     if (urlCrop && urlCrop !== selectedCrop) {
       setSelectedCropLocal(urlCrop)
       dispatch(setSelectedCrop(urlCrop))
+      return // Early return to prevent other syncs when URL has data
     }
-    // If no URL crop but we have persisted crop, use it
-    else if (!urlCrop && persistedCrop && persistedCrop !== selectedCrop) {
+    
+    // Only sync from Redux if URL doesn't have a crop AND we have a persisted crop
+    if (!urlCrop && persistedCrop && persistedCrop !== selectedCrop) {
       setSelectedCropLocal(persistedCrop)
+      // Also update URL with persisted crop so URL stays in sync (one-time only)
+      const currentUrlParam = searchParams.get('crop')
+      if (currentUrlParam !== persistedCrop) {
+        setSearchParams(prev => {
+          const newParams = new URLSearchParams(prev)
+          newParams.set('crop', persistedCrop)
+          return newParams
+        }, { replace: true })
+      }
     }
     
     // Sync varieties (safe check for undefined)
@@ -64,7 +75,7 @@ const Varieties: React.FC = () => {
         setSelectedVarietiesLocal(persistedVarieties)
       }
     }
-  }, [urlCrop, persistedCrop, persistedVarieties, dispatch]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlCrop, persistedCrop]) // Only watch URL and Redux, not selectedCrop to prevent loops
 
   // Parse coordinates from URL params or location input
   const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : undefined
@@ -100,19 +111,8 @@ const Varieties: React.FC = () => {
     return null
   }
 
-  useEffect(() => {
-    // Only update URL if selectedCrop differs from URL param to avoid infinite loop
-    const currentUrlCrop = searchParams.get('crop')
-    if (selectedCrop && selectedCrop !== currentUrlCrop) {
-      setSearchParams(prev => {
-        const newParams = new URLSearchParams(prev)
-        newParams.set('crop', selectedCrop)
-        return newParams
-      }, { replace: true }) // Use replace to avoid adding to history stack
-      // Update Redux when crop changes
-      dispatch(setSelectedCrop(selectedCrop))
-    }
-  }, [selectedCrop]) // Removed setSearchParams and dispatch from deps to prevent loops
+  // REMOVED: useEffect that auto-updates URL when selectedCrop changes
+  // This was causing infinite loops. URL should only update from explicit user actions.
 
   const handleCropSelect = (crop: string | null) => {
     const cropValue = crop || ''
@@ -121,6 +121,17 @@ const Varieties: React.FC = () => {
     setSelectedVarietiesLocal([])
     dispatch(setSelectedCrop(cropValue))
     dispatch(setSelectedVarieties([]))
+    
+    // Update URL directly from user action (not from useEffect)
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev)
+      if (cropValue) {
+        newParams.set('crop', cropValue)
+      } else {
+        newParams.delete('crop')
+      }
+      return newParams
+    }, { replace: true })
   }
 
   const handleVarietySelect = (varietyName: string) => {
@@ -211,6 +222,7 @@ const Varieties: React.FC = () => {
                   if (selectedCrop) {
                     // Parse location input and update URL params
                     const coords = parseCoordinates(locationInput)
+                    // Update URL params without triggering state updates
                     setSearchParams(prev => {
                       const newParams = new URLSearchParams(prev)
                       newParams.set('crop', selectedCrop)
@@ -222,7 +234,7 @@ const Varieties: React.FC = () => {
                         newParams.delete('lon')
                       }
                       return newParams
-                    }, { replace: true }) // Use replace to avoid history stack issues
+                    }, { replace: true })
                   }
                 }}
                 fullWidth
