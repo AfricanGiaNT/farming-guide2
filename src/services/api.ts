@@ -1,8 +1,35 @@
 import axios from 'axios'
 
+// Get API base URL from environment or determine automatically
+const getApiBaseUrl = () => {
+  // If VITE_API_BASE_URL is set, use it
+  if (process.env.VITE_API_BASE_URL) {
+    console.log('🌐 Using VITE_API_BASE_URL:', process.env.VITE_API_BASE_URL)
+    return process.env.VITE_API_BASE_URL
+  }
+  
+  // Auto-detect based on current hostname
+  const hostname = window.location.hostname
+  console.log('🌐 Detected hostname:', hostname)
+  
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Local development
+    console.log('🌐 Using localhost API URL')
+    return 'http://localhost:8000/api'
+  } else {
+    // Production - use relative path since frontend and backend are on same domain
+    console.log('🌐 Using production relative API URL: /api')
+    return '/api'
+  }
+}
+
+// Get the API base URL
+const apiBaseUrl = getApiBaseUrl()
+console.log('🌐 Final API base URL:', apiBaseUrl)
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: apiBaseUrl,
   timeout: 15000, // 15 seconds
   headers: {
     'Content-Type': 'application/json',
