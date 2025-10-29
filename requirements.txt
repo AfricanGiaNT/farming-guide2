@@ -50,9 +50,8 @@ python-dotenv==1.0.0
 python-telegram-bot==20.7
 requests==2.31.0
 sqlalchemy
-# Supabase stack - use latest stable versions
-supabase==2.10.0
-httpx==0.25.2
+# Supabase - use version compatible with httpx 0.25.x (required by python-telegram-bot)
+supabase==2.7.4
 telegram
 tiktoken
 urllib3==2.1.0
