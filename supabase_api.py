@@ -49,7 +49,9 @@ class SupabaseVarietiesAPI:
             self.supabase.table("crops").select("id").limit(1).execute()
             self._reconnect_attempts = 0  # Reset on success
         except Exception as e:
-            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
+            error_str = str(e).lower()
+            # Only reconnect for actual connection errors, not query errors
+            if "disconnected" in error_str or "connection" in error_str or "network" in error_str:
                 print(f"⚠️ Supabase connection issue detected: {e}")
                 if self._reconnect_attempts < self._max_reconnect_attempts:
                     self._reconnect_attempts += 1
@@ -58,7 +60,17 @@ class SupabaseVarietiesAPI:
                 else:
                     print(f"❌ Max reconnection attempts reached")
                     raise
+            elif "proxy" in error_str:
+                # Proxy error - try to reconnect once more with fresh client
+                print(f"⚠️ Supabase proxy error detected, attempting reconnect...")
+                try:
+                    self.supabase = get_supabase_client()
+                    self._reconnect_attempts = 0  # Reset on successful reconnect
+                except Exception as reconnect_error:
+                    print(f"❌ Reconnect failed: {reconnect_error}")
+                    raise
             else:
+                # Other errors (like query errors) - don't reconnect, just raise
                 raise
     
     def get_crops(self):
