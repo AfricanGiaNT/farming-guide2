@@ -37,32 +37,43 @@ function App() {
 
   useEffect(() => {
     // Get user's location on app load
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          dispatch(setUserLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          }))
-        },
-        (error) => {
-          console.warn('Location access denied:', error)
-          // Default to Lilongwe coordinates
-          dispatch(setUserLocation({
-            lat: -13.9833,
-            lon: 33.7833,
-            accuracy: null,
-          }))
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000, // 5 minutes
-        }
-      )
+    // Only access geolocation if available
+    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            dispatch(setUserLocation({
+              lat: position.coords.latitude,
+              lon: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            }))
+          },
+          (error) => {
+            console.warn('Location access denied:', error)
+            // Default to Lilongwe coordinates
+            dispatch(setUserLocation({
+              lat: -13.9833,
+              lon: 33.7833,
+              accuracy: null,
+            }))
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 300000, // 5 minutes
+          }
+        )
+      } catch (error) {
+        // Catch any security errors (e.g., insecure context)
+        console.warn('Geolocation unavailable:', error)
+        dispatch(setUserLocation({
+          lat: -13.9833,
+          lon: 33.7833,
+          accuracy: null,
+        }))
+      }
     } else {
-      // Fallback to Lilongwe coordinates
+      // Fallback to Lilongwe coordinates if geolocation unavailable
       dispatch(setUserLocation({
         lat: -13.9833,
         lon: 33.7833,

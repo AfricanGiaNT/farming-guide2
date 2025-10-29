@@ -101,16 +101,18 @@ const Varieties: React.FC = () => {
   }
 
   useEffect(() => {
-    if (selectedCrop) {
+    // Only update URL if selectedCrop differs from URL param to avoid infinite loop
+    const currentUrlCrop = searchParams.get('crop')
+    if (selectedCrop && selectedCrop !== currentUrlCrop) {
       setSearchParams(prev => {
         const newParams = new URLSearchParams(prev)
         newParams.set('crop', selectedCrop)
         return newParams
-      })
+      }, { replace: true }) // Use replace to avoid adding to history stack
       // Update Redux when crop changes
       dispatch(setSelectedCrop(selectedCrop))
     }
-  }, [selectedCrop, setSearchParams, dispatch])
+  }, [selectedCrop]) // Removed setSearchParams and dispatch from deps to prevent loops
 
   const handleCropSelect = (crop: string | null) => {
     const cropValue = crop || ''
@@ -220,7 +222,7 @@ const Varieties: React.FC = () => {
                         newParams.delete('lon')
                       }
                       return newParams
-                    })
+                    }, { replace: true }) // Use replace to avoid history stack issues
                   }
                 }}
                 fullWidth
