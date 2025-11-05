@@ -41,10 +41,17 @@ import {
   MonetizationOn as MarketIcon,
   ExpandMore as ExpandMoreIcon,
   Home as HomeIcon,
+  DriveEta as TractorIcon,
+  LocalFlorist as ManureIcon,
+  Agriculture as SproutIcon,
+  Warning as WarningIcon,
+  Grass as CropIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material'
 import axios from 'axios'
 import { displayToDatabaseName } from '../../utils/cropNameMapping'
 import { createSlug } from '../../utils/slugUtils'
+import { extractKeyPoints } from '../../utils/extractKeyPoints'
 
 interface MobileVarietyDetailProps {}
 
@@ -52,6 +59,7 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
   const { cropName, varietyName } = useParams<{ cropName: string; varietyName: string }>()
   const navigate = useNavigate()
   const [varietyData, setVarietyData] = useState<any>(null)
+  const [cropProductionInfo, setCropProductionInfo] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -109,56 +117,88 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
         })
         
         // Find the specific variety - try multiple matching strategies
-        const targetSlug = varietyName?.toLowerCase().trim()
+        // Normalize the target variety name (handle both space and hyphen variations)
+        const targetSlug = varietyName?.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
         let variety = null
         
-        // Strategy 1: Exact slug match
+        console.log('🔍 Matching strategies - Target slug:', targetSlug, 'Looking for variety:', varietyName)
+        
+        // Strategy 1: Exact slug match (normalize both sides)
         variety = varieties.find((v: any) => {
-          const varietySlug = createSlug(v.name)
+          const varietyNameField = v.name || v.variety_name || v.varietyName
+          if (!varietyNameField) return false
+          const varietySlug = createSlug(varietyNameField)
           const matches = varietySlug === targetSlug
-          if (matches) console.log(`✅ Exact slug match: "${v.name}" (slug: ${varietySlug}) === "${targetSlug}"`)
+          if (matches) console.log(`✅ Exact slug match: "${varietyNameField}" (slug: ${varietySlug}) === "${targetSlug}"`)
           return matches
         })
         
-        // Strategy 2: Case-insensitive name match (without slug conversion)
+        // Strategy 2: Case-insensitive name match (normalize spaces and hyphens)
         if (!variety) {
           variety = varieties.find((v: any) => {
-            const matches = v.name.toLowerCase().trim() === varietyName.toLowerCase().trim()
-            if (matches) console.log(`✅ Case-insensitive name match: "${v.name}" === "${varietyName}"`)
+            const varietyNameField = v.name || v.variety_name || v.varietyName
+            if (!varietyNameField) return false
+            // Normalize both: replace spaces/hyphens with single space, then compare
+            const vNormalized = varietyNameField.toLowerCase().trim().replace(/[\s-]+/g, ' ')
+            const targetNormalized = varietyName.toLowerCase().trim().replace(/[\s-]+/g, ' ')
+            const matches = vNormalized === targetNormalized
+            if (matches) console.log(`✅ Case-insensitive normalized match: "${varietyNameField}" (normalized: ${vNormalized}) === "${varietyName}" (normalized: ${targetNormalized})`)
             return matches
           })
         }
         
-        // Strategy 3: Try matching by removing non-alphanumeric from both sides
+        // Strategy 3: Try matching by removing all non-alphanumeric from both sides
         if (!variety) {
           variety = varieties.find((v: any) => {
-            const vClean = v.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+            const varietyNameField = v.name || v.variety_name || v.varietyName
+            if (!varietyNameField) return false
+            const vClean = varietyNameField.toLowerCase().replace(/[^a-z0-9]/g, '')
             const targetClean = varietyName.toLowerCase().replace(/[^a-z0-9]/g, '')
             const matches = vClean === targetClean
-            if (matches) console.log(`✅ Clean match: "${v.name}" (clean: ${vClean}) === "${varietyName}" (clean: ${targetClean})`)
+            if (matches) console.log(`✅ Clean match: "${varietyNameField}" (clean: ${vClean}) === "${varietyName}" (clean: ${targetClean})`)
             return matches
           })
         }
         
-        // Strategy 4: Partial match
+        // Strategy 4: Partial match (check if slug contains the target or vice versa)
         if (!variety) {
           variety = varieties.find((v: any) => {
-            const varietySlug = createSlug(v.name)
+            const varietyNameField = v.name || v.variety_name || v.varietyName
+            if (!varietyNameField) return false
+            const varietySlug = createSlug(varietyNameField)
             const normalizedVarietyName = varietyName.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-')
             const matches = varietySlug.includes(normalizedVarietyName) || normalizedVarietyName.includes(varietySlug)
-            if (matches) console.log(`✅ Partial match: "${v.name}" (slug: ${varietySlug}) contains "${normalizedVarietyName}" or vice versa`)
+            if (matches) console.log(`✅ Partial match: "${varietyNameField}" (slug: ${varietySlug}) contains "${normalizedVarietyName}" or vice versa`)
             return matches
           })
         }
         
         if (!variety) {
-          const availableNames = varieties.map((v: any) => v.name).join(', ')
-          console.error('🔍 MobileVarietyDetail - Variety not found. Looking for:', varietyName, 'Available:', availableNames)
-          throw new Error(`Variety "${varietyName}" not found. Available: ${availableNames || 'none'}`)
+          // Try to get variety names from different possible field names
+          const availableNames = varieties.map((v: any) => v.name || v.variety_name || v.varietyName || 'Unknown').join(', ')
+          const availableSlugs = varieties.map((v: any) => {
+            const vName = v.name || v.variety_name || v.varietyName || 'Unknown'
+            return `${vName} (slug: ${createSlug(vName)})`
+          }).join(', ')
+          
+          console.error('🔍 MobileVarietyDetail - Variety not found.', {
+            lookingFor: varietyName,
+            targetSlug,
+            availableNames,
+            availableSlugs
+          })
+          
+          // Show a more helpful error message
+          setError(`Variety "${varietyName}" not found. Available varieties: ${availableNames || 'none'}. Please go back and select a different variety.`)
+          setIsLoading(false)
+          return
         }
         
+        // Get variety name from any possible field
+        const varietyNameField = variety.name || variety.variety_name || variety.varietyName || 'Unknown'
+        
         console.log('🔍 MobileVarietyDetail - Setting variety data:', {
-          name: variety.name,
+          name: varietyNameField,
           yield_potential: variety.yield_potential,
           yield_potential_type: typeof variety.yield_potential,
           yield_potential_keys: variety.yield_potential ? Object.keys(variety.yield_potential) : 'none',
@@ -170,6 +210,10 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
         
         // Parse stringified objects if they exist (fix for serialization issue)
         const varietyCopy = { ...variety }
+        // Ensure name field is set
+        if (!varietyCopy.name) {
+          varietyCopy.name = varietyNameField
+        }
         
         // Check if fields are objects but appear empty - might be stringified in the original
         if (varietyCopy.yield_potential) {
@@ -229,6 +273,14 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
         })
         
         setVarietyData(finalVariety)
+        
+        // Store crop production info if available
+        if (response.data.crop_production_info) {
+          console.log('🌱 API returned crop_production_info:', response.data.crop_production_info)
+          setCropProductionInfo(response.data.crop_production_info)
+        } else {
+          console.log('⚠️ No crop_production_info in API response')
+        }
       } catch (err) {
         console.error('🔍 MobileVarietyDetail - Error:', err)
         if (axios.isAxiosError(err)) {
@@ -468,12 +520,297 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
         </CardContent>
       </Card>
 
-      {/* Accordion Sections for Details */}
+      {/* Things to Take Note in Production - UPDATED */}
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>⚠️ Things to Take Note in Production</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {(() => {
+            // PRIORITY: Use crop production info from Supabase FIRST (this is the main source)
+            const productionNotes = cropProductionInfo?.production_notes
+            if (productionNotes) {
+              const keyPoints = extractKeyPoints(productionNotes, 6)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Fallback: Collect variety-specific notes if crop_production_info is not available
+            const notesText = []
+            if (varietyData.disease_management && formatValue(varietyData.disease_management) !== 'Not specified') {
+              notesText.push(`Disease Management: ${formatValue(varietyData.disease_management)}`)
+            }
+            if (varietyData.pest_management && formatValue(varietyData.pest_management) !== 'Not specified') {
+              notesText.push(`Pest Management: ${formatValue(varietyData.pest_management)}`)
+            }
+            if (varietyData.drought_tolerance && formatValue(varietyData.drought_tolerance) !== 'Not specified') {
+              notesText.push(`Drought Tolerance: ${formatValue(varietyData.drought_tolerance)}`)
+            }
+            if (varietyData.description && formatValue(varietyData.description) !== 'Not specified') {
+              notesText.push(`General Notes: ${formatValue(varietyData.description)}`)
+            }
+            
+            // Extract key points from variety-specific data if available
+            if (notesText.length > 0) {
+              // Join with newlines to preserve structure, then extract
+              const combinedText = notesText.join('\n\n')
+              const keyPoints = extractKeyPoints(combinedText, 6)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Final fallback - extract key points from generic text
+            const fallbackText = `General production guidelines for ${cropName?.replace('-', ' ')}. Monitor growth regularly, ensure adequate water supply, and follow recommended spacing and planting practices.`
+            const fallbackPoints = extractKeyPoints(fallbackText, 3)
+            if (fallbackPoints.length > 0) {
+              return (
+                <List dense>
+                  {fallbackPoints.map((point, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={point} />
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fallbackText}
+              </Typography>
+            )
+          })()}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Land Preparation */}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TractorIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="subtitle1">Land Preparation</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {(() => {
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const landPrep = cropProductionInfo?.land_preparation
+            console.log('🔍 Land Prep Debug:', {
+              hasCropProductionInfo: !!cropProductionInfo,
+              hasLandPrep: !!landPrep,
+              landPrepLength: landPrep?.length || 0,
+              landPrepPreview: landPrep?.substring(0, 200) || 'N/A'
+            })
+            
+            if (landPrep && landPrep.trim().length > 0) {
+              // Extract more points for land preparation to show detailed information
+              console.log('🌱 Processing land_preparation:', {
+                originalLength: landPrep.length,
+                first500Chars: landPrep.substring(0, 500),
+                hasNewlines: landPrep.includes('\n'),
+                paragraphCount: landPrep.split('\n\n').length
+              })
+              
+              const keyPoints = extractKeyPoints(landPrep, 10)
+              console.log('🌱 Extracted key points count:', keyPoints.length)
+              console.log('🌱 Key points:', keyPoints)
+              
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0, py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={point} 
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              } else {
+                console.error('⚠️ extractKeyPoints returned empty array for land_preparation')
+                // Fallback: Show raw text if extraction fails (truncated)
+                const truncatedText = landPrep.length > 500 ? landPrep.substring(0, 500) + '...' : landPrep
+                return (
+                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                    {truncatedText}
+                  </Typography>
+                )
+              }
+            } else {
+              console.log('⚠️ No land_preparation in crop_production_info or it is empty')
+            }
+            
+            // Fallback: Try to extract land preparation info from soil_requirements
+            const soilInfo = formatValue(varietyData.soil_requirements, '')
+            if (soilInfo && soilInfo !== 'Not specified' && soilInfo.toLowerCase().includes('prepar')) {
+              const keyPoints = extractKeyPoints(soilInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Final fallback - use generic text with key points extraction
+            const fallbackText = soilInfo && soilInfo !== 'Not specified'
+              ? `Prepare land by plowing and harrowing to achieve fine tilth. Ensure ${soilInfo.toLowerCase()}. Remove weeds and incorporate organic matter if available.`
+              : `Prepare land by plowing and harrowing to achieve fine tilth. Ensure well-drained soil. Remove weeds and incorporate organic matter if available. Level the field for uniform water distribution if irrigation is needed.`
+            
+            const fallbackPoints = extractKeyPoints(fallbackText, 3)
+            if (fallbackPoints.length > 0) {
+              return (
+                <List dense>
+                  {fallbackPoints.map((point, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={point} />
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fallbackText}
+              </Typography>
+            )
+          })()}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Manure Application */}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <ManureIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Typography variant="subtitle1">Manure Application</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {(() => {
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const manureInfo = cropProductionInfo?.manure_application
+            if (manureInfo) {
+              const keyPoints = extractKeyPoints(manureInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Fallback: Check if fertilizer_requirements mentions manure
+            const fertInfo = formatValue(varietyData.fertilizer_requirements, '')
+            if (fertInfo && fertInfo !== 'Not specified' && fertInfo.toLowerCase().includes('manure')) {
+              const keyPoints = extractKeyPoints(fertInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Final fallback - extract key points from generic text
+            const fallbackText = fertInfo && fertInfo !== 'Not specified'
+              ? `Apply well-decomposed farmyard manure or compost at 5-10 tons per hectare before planting. ${fertInfo}`
+              : `Apply well-decomposed farmyard manure or compost at 5-10 tons per hectare before planting. Incorporate manure into the soil during land preparation to improve soil structure and fertility.`
+            
+            const fallbackPoints = extractKeyPoints(fallbackText, 3)
+            if (fallbackPoints.length > 0) {
+              return (
+                <List dense>
+                  {fallbackPoints.map((point, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={point} />
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fallbackText}
+              </Typography>
+            )
+          })()}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Planting Information */}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <LocationIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="subtitle1">Planting Requirements</Typography>
+            <Typography variant="subtitle1">Planting Information</Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails>
@@ -484,16 +821,7 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
               </ListItemIcon>
               <ListItemText
                 primary="Planting Time"
-                secondary={formatValue(varietyData.planting_time, 'Seasonal planting')}
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemIcon>
-                <SoilIcon color="primary" fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Soil Requirements"
-                secondary={formatValue(varietyData.soil_requirements, 'Well-drained loamy soil')}
+                secondary={formatValue(varietyData.planting_time || varietyData.planting_months, 'Seasonal planting recommended')}
               />
             </ListItem>
             <ListItem>
@@ -501,98 +829,308 @@ const MobileVarietyDetail: React.FC<MobileVarietyDetailProps> = () => {
                 <LocationIcon color="primary" fontSize="small" />
               </ListItemIcon>
               <ListItemText
-                primary="Spacing"
-                secondary={formatValue(varietyData.spacing_requirements, 'Standard spacing')}
-              />
-            </ListItem>
-          </List>
-        </AccordionDetails>
-      </Accordion>
-
-      <Accordion>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <WaterIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="subtitle1">Growing Conditions</Typography>
-          </Box>
-        </AccordionSummary>
-        <AccordionDetails>
-          <List dense disablePadding>
-            <ListItem>
-              <ListItemIcon>
-                <WaterIcon color="primary" fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary="Rainfall Range"
-                secondary={`${formatValue(varietyData.min_rainfall_mm, '400')} - ${formatValue(varietyData.max_rainfall_mm, '800')} mm`}
+                primary="Spacing Requirements"
+                secondary={formatValue(varietyData.spacing_requirements, 'Follow recommended spacing for optimal growth and yield')}
               />
             </ListItem>
             <ListItem>
               <ListItemIcon>
-                <InfoIcon color="primary" fontSize="small" />
+                <SproutIcon color="primary" fontSize="small" />
               </ListItemIcon>
               <ListItemText
-                primary="Temperature Range"
-                secondary={`${formatValue(varietyData.optimal_temperature_min, '20')}°C - ${formatValue(varietyData.optimal_temperature_max, '30')}°C`}
+                primary="Seed Rate"
+                secondary={varietyData.seed_rate_per_hectare 
+                  ? `${formatValue(varietyData.seed_rate_per_hectare)} per hectare`
+                  : 'Standard seed rate per hectare recommended'}
               />
             </ListItem>
-            {/* Pest and Disease Management will be shown as a separate expandable section */}
           </List>
+          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', mt: 2 }}>
+            Planting Guidelines
+          </Typography>
+          {(() => {
+            const guidelines = []
+            if (varietyData.spacing_requirements && formatValue(varietyData.spacing_requirements) !== 'Not specified') {
+              guidelines.push(`Maintain spacing: ${formatValue(varietyData.spacing_requirements)}`)
+            }
+            if (varietyData.planting_time && formatValue(varietyData.planting_time) !== 'Not specified') {
+              guidelines.push(`Plant during: ${formatValue(varietyData.planting_time)}`)
+            }
+            
+            // Use variety-specific if available
+            if (guidelines.length > 0) {
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {guidelines.join('. ') + '. Ensure proper depth and soil contact for optimal germination.'}
+                </Typography>
+              )
+            }
+            
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const plantingInfo = cropProductionInfo?.planting_info
+            if (plantingInfo) {
+              const keyPoints = extractKeyPoints(plantingInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Plant seeds at recommended depth with proper spacing. Ensure good soil contact and adequate moisture for optimal germination and establishment.
+              </Typography>
+            )
+          })()}
         </AccordionDetails>
       </Accordion>
 
+      {/* Fertilizer Application */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <FertilizerIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="subtitle1">Required Inputs</Typography>
+            <Typography variant="subtitle1">Fertilizer Application</Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Fertilizers
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {formatValue(varietyData.fertilizer_requirements, 'Standard NPK fertilizer application recommended')}
-          </Typography>
-          
-          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Pest Management
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {formatValue(varietyData.pest_management, 'Regular monitoring and integrated pest management recommended')}
-          </Typography>
-          
-          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Disease Management
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {formatValue(varietyData.disease_management, 'Preventive measures and early detection recommended')}
-          </Typography>
+          {(() => {
+            const fertInfo = formatValue(varietyData.fertilizer_requirements, '')
+            
+            // Always extract key points if we have variety-specific data
+            if (fertInfo && fertInfo !== 'Not specified') {
+              const keyPoints = extractKeyPoints(fertInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const fertilizerInfo = cropProductionInfo?.fertilizer_application
+            if (fertilizerInfo) {
+              const keyPoints = extractKeyPoints(fertilizerInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Final fallback - extract key points from generic text
+            const fallbackText = 'Apply balanced NPK fertilizer according to soil test results. Generally, apply 100-150 kg/ha of compound fertilizer (e.g., 23:21:0+4S or 10:20:20) at planting. Top-dress with nitrogen fertilizer 4-6 weeks after planting if needed.'
+            const fallbackPoints = extractKeyPoints(fallbackText, 3)
+            if (fallbackPoints.length > 0) {
+              return (
+                <List dense>
+                  {fallbackPoints.map((point, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={point} />
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fallbackText}
+              </Typography>
+            )
+          })()}
         </AccordionDetails>
       </Accordion>
 
+      {/* Weeding */}
+      <Accordion>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <CropIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Typography variant="subtitle1">Weeding</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {(() => {
+            // Check if pest_management mentions weeding
+            const pestInfo = formatValue(varietyData.pest_management, '')
+            
+            // Always extract key points if we have variety-specific data
+            if (pestInfo && pestInfo !== 'Not specified' && pestInfo.toLowerCase().includes('weed')) {
+              const keyPoints = extractKeyPoints(pestInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const weedingInfo = cropProductionInfo?.weeding
+            if (weedingInfo) {
+              const keyPoints = extractKeyPoints(weedingInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            // Final fallback - extract key points from generic text
+            const fallbackText = pestInfo && pestInfo !== 'Not specified'
+              ? `Weed the crop 2-3 weeks after planting and as needed throughout the growing season. Use hand weeding, hoeing, or appropriate herbicides. Keep the field weed-free especially during the first 6-8 weeks when the crop is establishing. Additional pest management: ${pestInfo}`
+              : 'Weed the crop 2-3 weeks after planting and as needed throughout the growing season. Use hand weeding, hoeing, or appropriate herbicides. Keep the field weed-free especially during the first 6-8 weeks when the crop is establishing.'
+            
+            const fallbackPoints = extractKeyPoints(fallbackText, 3)
+            if (fallbackPoints.length > 0) {
+              return (
+                <List dense>
+                  {fallbackPoints.map((point, index) => (
+                    <ListItem key={index} sx={{ pl: 0 }}>
+                      <ListItemIcon sx={{ minWidth: 36 }}>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={point} />
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fallbackText}
+              </Typography>
+            )
+          })()}
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Storing */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <StorageIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="subtitle1">Harvesting & Storage</Typography>
+            <Typography variant="subtitle1">Storing</Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails>
-          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Harvesting Guidelines
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {formatValue(varietyData.harvesting_guidelines, 'Harvest when pods are dry and seeds are mature')}
-          </Typography>
-          
-          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Storage Requirements
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {formatValue(varietyData.storage_requirements, 'Store in cool, dry place with proper ventilation')}
-          </Typography>
+          {(() => {
+            const storageInfo = formatValue(varietyData.storage_requirements, '')
+            const harvestInfo = formatValue(varietyData.harvesting_guidelines, '')
+            
+            // Use variety-specific if available
+            if ((storageInfo && storageInfo !== 'Not specified') || (harvestInfo && harvestInfo !== 'Not specified')) {
+              return (
+                <>
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    Storage Requirements
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {storageInfo && storageInfo !== 'Not specified'
+                      ? storageInfo
+                      : 'Store harvested produce in a cool, dry, and well-ventilated place. Ensure proper drying before storage to prevent mold and spoilage. Use clean, dry containers and protect from pests and moisture.'}
+                  </Typography>
+                  
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    Harvesting Guidelines
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {harvestInfo && harvestInfo !== 'Not specified'
+                      ? harvestInfo
+                      : 'Harvest at the appropriate maturity stage. For grains, harvest when pods are dry and seeds are mature. Handle produce carefully to avoid damage and store only fully dried produce.'}
+                  </Typography>
+                </>
+              )
+            }
+            
+            // PRIORITY: Use crop production info from Supabase FIRST
+            const storingInfo = cropProductionInfo?.storing
+            if (storingInfo) {
+              const keyPoints = extractKeyPoints(storingInfo, 5)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Storage Requirements
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Store harvested produce in a cool, dry, and well-ventilated place. Ensure proper drying before storage to prevent mold and spoilage. Use clean, dry containers and protect from pests and moisture.
+                </Typography>
+                
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  Harvesting Guidelines
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Harvest at the appropriate maturity stage. For grains, harvest when pods are dry and seeds are mature. Handle produce carefully to avoid damage and store only fully dried produce.
+                </Typography>
+              </>
+            )
+          })()}
         </AccordionDetails>
       </Accordion>
 

@@ -57,14 +57,12 @@ const Varieties: React.FC = () => {
     if (!urlCrop && persistedCrop && persistedCrop !== selectedCrop) {
       setSelectedCropLocal(persistedCrop)
       // Also update URL with persisted crop so URL stays in sync (one-time only)
-      const currentUrlParam = searchParams.get('crop')
-      if (currentUrlParam !== persistedCrop) {
-        setSearchParams(prev => {
-          const newParams = new URLSearchParams(prev)
-          newParams.set('crop', persistedCrop)
-          return newParams
-        }, { replace: true })
-      }
+      // urlCrop is already empty here, so we can safely set it
+      setSearchParams(prev => {
+        const newParams = new URLSearchParams(prev)
+        newParams.set('crop', persistedCrop)
+        return newParams
+      }, { replace: true })
     }
     
     // Sync varieties (safe check for undefined)

@@ -43,10 +43,16 @@ import {
   CalendarMonth as CalendarIcon,
   Info as InfoIcon,
   Home as HomeIcon,
+  Eco as EcoIcon,
+  DriveEta as TractorIcon,
+  LocalFlorist as ManureIcon,
+  Agriculture as SproutIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material'
 import axios from 'axios'
 import { displayToDatabaseName } from '../../utils/cropNameMapping'
 import { createSlug } from '../../utils/slugUtils'
+import { extractKeyPoints } from '../../utils/extractKeyPoints'
 
 interface VarietyDetailProps {}
 
@@ -54,6 +60,7 @@ const VarietyDetail: React.FC<VarietyDetailProps> = () => {
   const { cropName, varietyName } = useParams<{ cropName: string; varietyName: string }>()
   const navigate = useNavigate()
   const [varietyData, setVarietyData] = useState<any>(null)
+  const [cropProductionInfo, setCropProductionInfo] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -196,6 +203,11 @@ const VarietyDetail: React.FC<VarietyDetailProps> = () => {
         
         const finalVariety = JSON.parse(JSON.stringify(varietyCopy))
         setVarietyData(finalVariety)
+        
+        // Store crop production info if available
+        if (response.data.crop_production_info) {
+          setCropProductionInfo(response.data.crop_production_info)
+        }
       } catch (err) {
         console.error('🔍 VarietyDetail - Error:', err)
         if (axios.isAxiosError(err)) {
@@ -438,19 +450,183 @@ const VarietyDetail: React.FC<VarietyDetailProps> = () => {
         </CardContent>
       </Card>
 
-      {/* Detailed Production Guide */}
+      {/* Things to Take Note in Production */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <WarningIcon sx={{ mr: 1, color: 'warning.main' }} />
+            <Typography variant="h6">Things to Take Note in Production</Typography>
+          </Box>
+          
+          <Box sx={{ mb: 2 }}>
+            {(() => {
+              const notes = []
+              if (varietyData.disease_management && formatValue(varietyData.disease_management) !== 'Not specified') {
+                notes.push(`Disease Management: ${formatValue(varietyData.disease_management)}`)
+              }
+              if (varietyData.pest_management && formatValue(varietyData.pest_management) !== 'Not specified') {
+                notes.push(`Pest Management: ${formatValue(varietyData.pest_management)}`)
+              }
+              if (varietyData.drought_tolerance && formatValue(varietyData.drought_tolerance) !== 'Not specified') {
+                notes.push(`Drought Tolerance: ${formatValue(varietyData.drought_tolerance)}`)
+              }
+              if (varietyData.description && formatValue(varietyData.description) !== 'Not specified') {
+                notes.push(`General Notes: ${formatValue(varietyData.description)}`)
+              }
+              
+              // Use variety-specific if available, otherwise use crop production info
+              if (notes.length > 0) {
+                return (
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {notes.join('\n\n')}
+                  </Typography>
+                )
+              }
+              
+              // Fallback to crop production info
+              const productionNotes = cropProductionInfo?.production_notes
+              if (productionNotes) {
+                const keyPoints = extractKeyPoints(productionNotes, 5)
+                if (keyPoints.length > 0) {
+                  return (
+                    <List dense>
+                      {keyPoints.map((point, index) => (
+                        <ListItem key={index} sx={{ pl: 0 }}>
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <CheckCircleIcon color="primary" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText primary={point} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )
+                }
+              }
+              
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  General production guidelines for {cropName?.replace('-', ' ')}. Monitor growth regularly, ensure adequate water supply, and follow recommended spacing and planting practices.
+                </Typography>
+              )
+            })()}
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Land Preparation */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <TractorIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6">Land Preparation</Typography>
+          </Box>
+          
+          {(() => {
+            // Try to extract land preparation info from soil_requirements
+            const soilInfo = formatValue(varietyData.soil_requirements, '')
+            if (soilInfo && soilInfo !== 'Not specified' && soilInfo.toLowerCase().includes('prepar')) {
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {soilInfo}
+                </Typography>
+              )
+            }
+            
+            // Fallback to crop production info
+            const landPrep = cropProductionInfo?.land_preparation
+            if (landPrep) {
+              // Extract more points for land preparation to show detailed information
+              const keyPoints = extractKeyPoints(landPrep, 8)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0, py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={point} 
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {soilInfo && soilInfo !== 'Not specified'
+                  ? `Prepare land by plowing and harrowing to achieve fine tilth. Ensure ${soilInfo.toLowerCase()}. Remove weeds and incorporate organic matter if available.`
+                  : `Prepare land by plowing and harrowing to achieve fine tilth. Ensure well-drained soil. Remove weeds and incorporate organic matter if available. Level the field for uniform water distribution if irrigation is needed.`}
+              </Typography>
+            )
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Manure Application */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <ManureIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Typography variant="h6">Manure Application</Typography>
+          </Box>
+          
+          {(() => {
+            // Check if fertilizer_requirements mentions manure
+            const fertInfo = formatValue(varietyData.fertilizer_requirements, '')
+            if (fertInfo && fertInfo !== 'Not specified' && fertInfo.toLowerCase().includes('manure')) {
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {fertInfo}
+                </Typography>
+              )
+            }
+            
+            // Fallback to crop production info
+            const manureInfo = cropProductionInfo?.manure_application
+            if (manureInfo) {
+              const keyPoints = extractKeyPoints(manureInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {fertInfo && fertInfo !== 'Not specified'
+                  ? `Apply well-decomposed farmyard manure or compost at 5-10 tons per hectare before planting. ${fertInfo}`
+                  : `Apply well-decomposed farmyard manure or compost at 5-10 tons per hectare before planting. Incorporate manure into the soil during land preparation to improve soil structure and fertility.`}
+              </Typography>
+            )
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Planting Information */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <PlantingIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Detailed Production Guide</Typography>
+            <Typography variant="h6">Planting Information</Typography>
           </Box>
           
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Planting Requirements
-              </Typography>
               <List dense>
                 <ListItem>
                   <ListItemIcon>
@@ -458,16 +634,7 @@ const VarietyDetail: React.FC<VarietyDetailProps> = () => {
                   </ListItemIcon>
                   <ListItemText
                     primary="Planting Time"
-                    secondary={formatValue(varietyData.planting_time, 'Seasonal planting')}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <SoilIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Soil Requirements"
-                    secondary={formatValue(varietyData.soil_requirements, 'Well-drained loamy soil')}
+                    secondary={formatValue(varietyData.planting_time || varietyData.planting_months, 'Seasonal planting recommended')}
                   />
                 </ListItem>
                 <ListItem>
@@ -475,118 +642,257 @@ const VarietyDetail: React.FC<VarietyDetailProps> = () => {
                     <LocationIcon color="primary" />
                   </ListItemIcon>
                   <ListItemText
-                    primary="Spacing"
-                    secondary={formatValue(varietyData.spacing_requirements, 'Standard spacing')}
+                    primary="Spacing Requirements"
+                    secondary={formatValue(varietyData.spacing_requirements, 'Follow recommended spacing for optimal growth and yield')}
+                  />
+                </ListItem>
+                <ListItem>
+                  <ListItemIcon>
+                    <SproutIcon color="primary" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Seed Rate"
+                    secondary={varietyData.seed_rate_per_hectare 
+                      ? `${formatValue(varietyData.seed_rate_per_hectare)} per hectare`
+                      : 'Standard seed rate per hectare recommended'}
                   />
                 </ListItem>
               </List>
             </Grid>
             
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Growing Conditions
+              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Planting Guidelines
               </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon>
-                    <WaterIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Rainfall Range"
-                    secondary={`${formatValue(varietyData.min_rainfall_mm, '400')} - ${formatValue(varietyData.max_rainfall_mm, '800')} mm`}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon color="primary" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Temperature Range"
-                    secondary={`${formatValue(varietyData.optimal_temperature_min, '20')}°C - ${formatValue(varietyData.optimal_temperature_max, '30')}°C`}
-                  />
-                </ListItem>
-                {/* Pest and Disease Management will be shown as a separate expandable section below */}
-              </List>
+              {(() => {
+                const guidelines = []
+                if (varietyData.spacing_requirements && formatValue(varietyData.spacing_requirements) !== 'Not specified') {
+                  guidelines.push(`Maintain spacing: ${formatValue(varietyData.spacing_requirements)}`)
+                }
+                if (varietyData.planting_time && formatValue(varietyData.planting_time) !== 'Not specified') {
+                  guidelines.push(`Plant during: ${formatValue(varietyData.planting_time)}`)
+                }
+                
+                // Use variety-specific if available
+                if (guidelines.length > 0) {
+                  return (
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {guidelines.join('. ') + '. Ensure proper depth and soil contact for optimal germination.'}
+                    </Typography>
+                  )
+                }
+                
+                // Fallback to crop production info
+                const plantingInfo = cropProductionInfo?.planting_info
+                if (plantingInfo) {
+                  const keyPoints = extractKeyPoints(plantingInfo, 4)
+                  if (keyPoints.length > 0) {
+                    return (
+                      <List dense>
+                        {keyPoints.map((point, index) => (
+                          <ListItem key={index} sx={{ pl: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 36 }}>
+                              <CheckCircleIcon color="primary" fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary={point} />
+                          </ListItem>
+                        ))}
+                      </List>
+                    )
+                  }
+                }
+                
+                return (
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Plant seeds at recommended depth with proper spacing. Ensure good soil contact and adequate moisture for optimal germination and establishment.
+                  </Typography>
+                )
+              })()}
             </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Required Inputs */}
+      {/* Fertilizer Application */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <FertilizerIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Required Inputs</Typography>
+            <Typography variant="h6">Fertilizer Application</Typography>
           </Box>
           
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Fertilizers
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.fertilizer_requirements, 'Standard NPK fertilizer application recommended')}
-              </Typography>
-            </Grid>
+          {(() => {
+            const fertInfo = formatValue(varietyData.fertilizer_requirements, '')
+            if (fertInfo && fertInfo !== 'Not specified') {
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {fertInfo}
+                </Typography>
+              )
+            }
             
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Pest Management
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.pest_management, 'Regular monitoring and integrated pest management recommended')}
-              </Typography>
-            </Grid>
+            // Fallback to crop production info
+            const fertilizerInfo = cropProductionInfo?.fertilizer_application
+            if (fertilizerInfo) {
+              const keyPoints = extractKeyPoints(fertilizerInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
             
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Disease Management
-              </Typography>
+            return (
               <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.disease_management, 'Preventive measures and early detection recommended')}
+                Apply balanced NPK fertilizer according to soil test results. Generally, apply 100-150 kg/ha of compound fertilizer (e.g., 23:21:0+4S or 10:20:20) at planting. Top-dress with nitrogen fertilizer 4-6 weeks after planting if needed.
               </Typography>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Seed Rate
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.seed_rate_per_hectare, 'Standard seed rate per hectare')}
-              </Typography>
-            </Grid>
-          </Grid>
+            )
+          })()}
         </CardContent>
       </Card>
 
-      {/* Harvesting & Storage */}
+      {/* Weeding */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CropIcon sx={{ mr: 1, color: 'success.main' }} />
+            <Typography variant="h6">Weeding</Typography>
+          </Box>
+          
+          {(() => {
+            // Check if pest_management mentions weeding
+            const pestInfo = formatValue(varietyData.pest_management, '')
+            if (pestInfo && pestInfo !== 'Not specified' && pestInfo.toLowerCase().includes('weed')) {
+              return (
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {pestInfo}
+                </Typography>
+              )
+            }
+            
+            // Fallback to crop production info
+            const weedingInfo = cropProductionInfo?.weeding
+            if (weedingInfo) {
+              const keyPoints = extractKeyPoints(weedingInfo, 4)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <Typography variant="body2" color="text.secondary" paragraph>
+                {pestInfo && pestInfo !== 'Not specified'
+                  ? `Weed the crop 2-3 weeks after planting and as needed throughout the growing season. Use hand weeding, hoeing, or appropriate herbicides. Keep the field weed-free especially during the first 6-8 weeks when the crop is establishing. Additional pest management: ${pestInfo}`
+                  : 'Weed the crop 2-3 weeks after planting and as needed throughout the growing season. Use hand weeding, hoeing, or appropriate herbicides. Keep the field weed-free especially during the first 6-8 weeks when the crop is establishing.'}
+              </Typography>
+            )
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Storing */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <StorageIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Harvesting & Storage</Typography>
+            <Typography variant="h6">Storing</Typography>
           </Box>
           
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Harvesting Guidelines
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.harvesting_guidelines, 'Harvest when pods are dry and seeds are mature')}
-              </Typography>
-            </Grid>
+          {(() => {
+            const storageInfo = formatValue(varietyData.storage_requirements, '')
+            const harvestInfo = formatValue(varietyData.harvesting_guidelines, '')
             
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Storage Requirements
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                {formatValue(varietyData.storage_requirements, 'Store in cool, dry place with proper ventilation')}
-              </Typography>
-            </Grid>
-          </Grid>
+            // Use variety-specific if available
+            if ((storageInfo && storageInfo !== 'Not specified') || (harvestInfo && harvestInfo !== 'Not specified')) {
+              return (
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      Storage Requirements
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {storageInfo && storageInfo !== 'Not specified'
+                        ? storageInfo
+                        : 'Store harvested produce in a cool, dry, and well-ventilated place. Ensure proper drying before storage to prevent mold and spoilage. Use clean, dry containers and protect from pests and moisture.'}
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                      Harvesting Guidelines
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                      {harvestInfo && harvestInfo !== 'Not specified'
+                        ? harvestInfo
+                        : 'Harvest at the appropriate maturity stage. For grains, harvest when pods are dry and seeds are mature. Handle produce carefully to avoid damage and store only fully dried produce.'}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              )
+            }
+            
+            // Fallback to crop production info
+            const storingInfo = cropProductionInfo?.storing
+            if (storingInfo) {
+              const keyPoints = extractKeyPoints(storingInfo, 5)
+              if (keyPoints.length > 0) {
+                return (
+                  <List dense>
+                    {keyPoints.map((point, index) => (
+                      <ListItem key={index} sx={{ pl: 0 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={point} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              }
+            }
+            
+            return (
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    Storage Requirements
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Store harvested produce in a cool, dry, and well-ventilated place. Ensure proper drying before storage to prevent mold and spoilage. Use clean, dry containers and protect from pests and moisture.
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    Harvesting Guidelines
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Harvest at the appropriate maturity stage. For grains, harvest when pods are dry and seeds are mature. Handle produce carefully to avoid damage and store only fully dried produce.
+                  </Typography>
+                </Grid>
+              </Grid>
+            )
+          })()}
         </CardContent>
       </Card>
 

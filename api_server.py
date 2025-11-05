@@ -20,6 +20,7 @@ from pathlib import Path
 
 from database.schema_manager import ensure_varieties_schema
 from scripts.handlers.varieties_supabase_handler import VarietiesSupabaseHandler
+from scripts.utils.crop_production_info_handler import CropProductionInfoHandler
 
 def load_config():
     """Load configuration from the config directory"""
@@ -68,13 +69,14 @@ weather_api = None
 recommendation_engine = None
 varieties_handler = None
 supabase_varieties_handler = None
+crop_production_info_handler = None
 semantic_search = None
 sqlite_recommendation_engine = None
 seasonal_advisor = None
 
 def initialize_components():
     """Initialize backend components"""
-    global weather_api, recommendation_engine, varieties_handler, supabase_varieties_handler, semantic_search, sqlite_recommendation_engine, seasonal_advisor
+    global weather_api, recommendation_engine, varieties_handler, supabase_varieties_handler, crop_production_info_handler, semantic_search, sqlite_recommendation_engine, seasonal_advisor
     
     print("[INIT] Initializing backend components...")
 
@@ -180,6 +182,22 @@ def initialize_components():
         print(f"[ERROR] Traceback:")
         traceback.print_exc()
         supabase_varieties_handler = None
+    
+    # Initialize Crop Production Info Handler
+    try:
+        crop_production_info_handler = CropProductionInfoHandler()
+        print("[OK] Crop production info handler initialized")
+        # Test it immediately
+        test_info = crop_production_info_handler.get_production_info('maize')
+        if test_info:
+            print(f"[OK] Crop production info handler test successful - found {len(test_info.get('land_preparation', ''))} chars of land prep for maize")
+        else:
+            print(f"[WARN] Crop production info handler test returned None for maize")
+    except Exception as e:
+        print(f"[WARN] Crop production info handler initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
+        crop_production_info_handler = None
     
     # For other components, keep using mock data to avoid other import issues
     print("[INFO] Other components using mock data for now")
@@ -829,12 +847,15 @@ def get_varieties():
 @app.route('/api/varieties/<crop_name>', methods=['GET'])
 def get_variety_information(crop_name):
     """Get variety information for a specific crop using Supabase first, then fallback to other sources"""
+    global crop_production_info_handler  # Ensure we're using the global variable
     try:
         # Get location parameters
         lat = request.args.get('lat', type=float)
         lon = request.args.get('lon', type=float)
-        limit = request.args.get('limit', type=int, default=10)  # Default to 10, max 20
-        limit = min(max(limit, 1), 20)  # Clamp between 1 and 20
+        # For variety detail pages, we need all varieties to find the specific one
+        # So use a higher default limit (50) when no limit is specified
+        limit = request.args.get('limit', type=int, default=50)  # Default to 50 to include all varieties
+        limit = min(max(limit, 1), 100)  # Clamp between 1 and 100
         
         # First, try to get varieties from Supabase
         print(f"🔍 API Server - Checking Supabase handler for {crop_name}")
@@ -859,6 +880,41 @@ def get_variety_information(crop_name):
                     }
                 else:
                     result['weather_analysis'] = None
+                
+                # Add crop production info if available
+                print(f"🔍 API Server - Checking crop_production_info_handler for {crop_name}")
+                print(f"   crop_production_info_handler variable: {crop_production_info_handler}")
+                print(f"   crop_production_info_handler is None: {crop_production_info_handler is None}")
+                print(f"   crop_production_info_handler available: {crop_production_info_handler is not None}")
+                if crop_production_info_handler:
+                    try:
+                        print(f"🔍 API Server - Fetching crop production info for {crop_name}")
+                        production_info = crop_production_info_handler.get_production_info(crop_name)
+                        print(f"🔍 API Server - Production info result: {production_info is not None}")
+                        if production_info:
+                            print(f"🔍 API Server - Production info has land_preparation: {'land_preparation' in production_info}")
+                            print(f"🔍 API Server - Land prep length: {len(production_info.get('land_preparation', '')) if production_info.get('land_preparation') else 0}")
+                            result['crop_production_info'] = {
+                                'production_notes': production_info.get('production_notes'),
+                                'land_preparation': production_info.get('land_preparation'),
+                                'manure_application': production_info.get('manure_application'),
+                                'planting_info': production_info.get('planting_info'),
+                                'fertilizer_application': production_info.get('fertilizer_application'),
+                                'weeding': production_info.get('weeding'),
+                                'storing': production_info.get('storing'),
+                            }
+                            print(f"✅ API Server - Added crop_production_info to response")
+                        else:
+                            print(f"⚠️ API Server - production_info is None or empty for {crop_name}")
+                            result['crop_production_info'] = None
+                    except Exception as e:
+                        print(f"[ERROR] Failed to fetch crop production info: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        result['crop_production_info'] = None
+                else:
+                    print(f"⚠️ API Server - crop_production_info_handler is None, not adding crop production info")
+                    result['crop_production_info'] = None
                     
                 # Add timestamp
                 result['timestamp'] = datetime.now().isoformat()
